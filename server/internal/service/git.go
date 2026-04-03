@@ -16,6 +16,7 @@ import (
 
 // CommitInfo represents a single git commit.
 type CommitInfo struct {
+<<<<<<< HEAD
 	Hash       string    `json:"hash"`
 	ShortHash  string    `json:"short_hash"`
 	Message    string    `json:"message"`
@@ -23,6 +24,15 @@ type CommitInfo struct {
 	AuthorEmail string   `json:"author_email"`
 	Date       time.Time `json:"date"`
 	FilesChanged int     `json:"files_changed"`
+=======
+	Hash         string    `json:"hash"`
+	ShortHash    string    `json:"short_hash"`
+	Message      string    `json:"message"`
+	Author       string    `json:"author"`
+	AuthorEmail  string    `json:"author_email"`
+	Date         time.Time `json:"date"`
+	FilesChanged int       `json:"files_changed"`
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 }
 
 // BranchInfo represents a git branch.
@@ -70,7 +80,10 @@ func NewGitService() *GitService {
 	return &GitService{}
 }
 
+<<<<<<< HEAD
 // openRepo opens an existing git repository at the given path.
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 func (s *GitService) openRepo(localPath string) (*git.Repository, error) {
 	repo, err := git.PlainOpen(localPath)
 	if err != nil {
@@ -80,6 +93,7 @@ func (s *GitService) openRepo(localPath string) (*git.Repository, error) {
 }
 
 // Init initializes a git repository at the given path if not already present.
+<<<<<<< HEAD
 // Returns true if a new repo was initialized, false if it already existed.
 func (s *GitService) Init(localPath string) (bool, error) {
 	_, err := git.PlainOpen(localPath)
@@ -87,12 +101,22 @@ func (s *GitService) Init(localPath string) (bool, error) {
 		return false, nil // already a repo
 	}
 
+=======
+func (s *GitService) Init(localPath string) (bool, error) {
+	_, err := git.PlainOpen(localPath)
+	if err == nil {
+		return false, nil
+	}
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	_, err = git.PlainInit(localPath, false)
 	if err != nil {
 		return false, fmt.Errorf("init repo: %w", err)
 	}
+<<<<<<< HEAD
 
 	// Add .multica-local to .gitignore
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	s.ensureGitignoreEntry(localPath, ".multica-local")
 	return true, nil
 }
@@ -109,12 +133,18 @@ func (s *GitService) Status(localPath string) (*GitStatus, error) {
 	if err != nil {
 		return nil, err
 	}
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	wt, err := repo.Worktree()
 	if err != nil {
 		return nil, fmt.Errorf("get worktree: %w", err)
 	}
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	status, err := wt.Status()
 	if err != nil {
 		return nil, fmt.Errorf("get status: %w", err)
@@ -126,14 +156,20 @@ func (s *GitService) Status(localPath string) (*GitStatus, error) {
 		Deleted:   []FileStatusEntry{},
 		Untracked: []FileStatusEntry{},
 	}
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	for path, s := range status {
 		entry := FileStatusEntry{
 			Path:     path,
 			Staging:  statusCodeToString(s.Staging),
 			Worktree: statusCodeToString(s.Worktree),
 		}
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 		switch {
 		case s.Worktree == git.Untracked:
 			gs.Untracked = append(gs.Untracked, entry)
@@ -144,11 +180,17 @@ func (s *GitService) Status(localPath string) (*GitStatus, error) {
 		case s.Worktree == git.Modified || s.Staging == git.Modified:
 			gs.Modified = append(gs.Modified, entry)
 		default:
+<<<<<<< HEAD
 			// Catch-all for renamed, copied, etc.
 			gs.Modified = append(gs.Modified, entry)
 		}
 	}
 
+=======
+			gs.Modified = append(gs.Modified, entry)
+		}
+	}
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	return gs, nil
 }
 
@@ -158,12 +200,18 @@ func (s *GitService) Add(localPath string, files []string) error {
 	if err != nil {
 		return err
 	}
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	wt, err := repo.Worktree()
 	if err != nil {
 		return fmt.Errorf("get worktree: %w", err)
 	}
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	for _, f := range files {
 		if _, err := wt.Add(f); err != nil {
 			return fmt.Errorf("stage %s: %w", f, err)
@@ -178,12 +226,18 @@ func (s *GitService) Commit(localPath, message, authorName, authorEmail string) 
 	if err != nil {
 		return "", err
 	}
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	wt, err := repo.Worktree()
 	if err != nil {
 		return "", fmt.Errorf("get worktree: %w", err)
 	}
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	hash, err := wt.Commit(message, &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  authorName,
@@ -203,16 +257,24 @@ func (s *GitService) Log(localPath string, limit, offset int) ([]CommitInfo, err
 	if err != nil {
 		return nil, err
 	}
+<<<<<<< HEAD
 
 	ref, err := repo.Head()
 	if err != nil {
 		// Empty repo with no commits
+=======
+	ref, err := repo.Head()
+	if err != nil {
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 		if err == plumbing.ErrReferenceNotFound {
 			return []CommitInfo{}, nil
 		}
 		return nil, fmt.Errorf("get HEAD: %w", err)
 	}
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	iter, err := repo.Log(&git.LogOptions{
 		From:  ref.Hash(),
 		Order: git.LogOrderCommitterTime,
@@ -232,7 +294,10 @@ func (s *GitService) Log(localPath string, limit, offset int) ([]CommitInfo, err
 		if len(commits) >= limit {
 			return io.EOF
 		}
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 		stats, _ := c.Stats()
 		commits = append(commits, CommitInfo{
 			Hash:         c.Hash.String(),
@@ -249,7 +314,10 @@ func (s *GitService) Log(localPath string, limit, offset int) ([]CommitInfo, err
 	if err != nil && err != io.EOF {
 		return nil, fmt.Errorf("iterate log: %w", err)
 	}
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	return commits, nil
 }
 
@@ -259,7 +327,10 @@ func (s *GitService) Show(localPath, commitHash string) (*CommitDetail, error) {
 	if err != nil {
 		return nil, err
 	}
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	hash := plumbing.NewHash(commitHash)
 	commit, err := repo.CommitObject(hash)
 	if err != nil {
@@ -278,7 +349,10 @@ func (s *GitService) Show(localPath, commitHash string) (*CommitDetail, error) {
 		Diffs: []DiffEntry{},
 	}
 
+<<<<<<< HEAD
 	// Get parent for diff (nil parent = initial commit)
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	var parentTree *object.Tree
 	if commit.NumParents() > 0 {
 		parent, err := commit.Parent(0)
@@ -289,7 +363,11 @@ func (s *GitService) Show(localPath, commitHash string) (*CommitDetail, error) {
 
 	commitTree, err := commit.Tree()
 	if err != nil {
+<<<<<<< HEAD
 		return detail, nil // return without diffs
+=======
+		return detail, nil
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	}
 
 	changes, err := object.DiffTree(parentTree, commitTree)
@@ -298,14 +376,20 @@ func (s *GitService) Show(localPath, commitHash string) (*CommitDetail, error) {
 	}
 
 	detail.CommitInfo.FilesChanged = len(changes)
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	for _, change := range changes {
 		de := DiffEntry{}
 		action, err := change.Action()
 		if err != nil {
 			continue
 		}
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 		switch action {
 		case merkletrie.Insert:
 			de.Change = "add"
@@ -321,11 +405,15 @@ func (s *GitService) Show(localPath, commitHash string) (*CommitDetail, error) {
 				de.OldPath = change.From.Name
 			}
 		}
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 		patch, err := change.Patch()
 		if err == nil && patch != nil {
 			de.Patch = patch.String()
 		}
+<<<<<<< HEAD
 
 		detail.Diffs = append(detail.Diffs, de)
 	}
@@ -334,17 +422,31 @@ func (s *GitService) Show(localPath, commitHash string) (*CommitDetail, error) {
 }
 
 // Diff returns working tree diff (unstaged changes).
+=======
+		detail.Diffs = append(detail.Diffs, de)
+	}
+	return detail, nil
+}
+
+// Diff returns working tree diff.
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 func (s *GitService) Diff(localPath string) ([]DiffEntry, error) {
 	repo, err := s.openRepo(localPath)
 	if err != nil {
 		return nil, err
 	}
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	wt, err := repo.Worktree()
 	if err != nil {
 		return nil, fmt.Errorf("get worktree: %w", err)
 	}
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	status, err := wt.Status()
 	if err != nil {
 		return nil, fmt.Errorf("get status: %w", err)
@@ -364,6 +466,7 @@ func (s *GitService) Diff(localPath string) ([]DiffEntry, error) {
 		case s.Staging == git.Added:
 			change = "add"
 		}
+<<<<<<< HEAD
 		diffs = append(diffs, DiffEntry{
 			Path:   path,
 			Change: change,
@@ -374,12 +477,23 @@ func (s *GitService) Diff(localPath string) ([]DiffEntry, error) {
 }
 
 // Branches returns all branches (local and remote).
+=======
+		diffs = append(diffs, DiffEntry{Path: path, Change: change})
+	}
+	return diffs, nil
+}
+
+// Branches returns all branches.
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 func (s *GitService) Branches(localPath string) ([]BranchInfo, error) {
 	repo, err := s.openRepo(localPath)
 	if err != nil {
 		return nil, err
 	}
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	head, _ := repo.Head()
 	headHash := ""
 	if head != nil {
@@ -387,8 +501,11 @@ func (s *GitService) Branches(localPath string) ([]BranchInfo, error) {
 	}
 
 	var branches []BranchInfo
+<<<<<<< HEAD
 
 	// Local branches
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	refs, err := repo.Branches()
 	if err != nil {
 		return nil, fmt.Errorf("list branches: %w", err)
@@ -402,7 +519,10 @@ func (s *GitService) Branches(localPath string) ([]BranchInfo, error) {
 		return nil
 	})
 
+<<<<<<< HEAD
 	// Remote branches
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	remoteRefs, err := repo.References()
 	if err == nil {
 		remoteRefs.ForEach(func(ref *plumbing.Reference) error {
@@ -416,7 +536,10 @@ func (s *GitService) Branches(localPath string) ([]BranchInfo, error) {
 			return nil
 		})
 	}
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	return branches, nil
 }
 
@@ -426,12 +549,18 @@ func (s *GitService) Checkout(localPath, branch string) error {
 	if err != nil {
 		return err
 	}
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	wt, err := repo.Worktree()
 	if err != nil {
 		return fmt.Errorf("get worktree: %w", err)
 	}
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	return wt.Checkout(&git.CheckoutOptions{
 		Branch: plumbing.NewBranchReferenceName(branch),
 	})
@@ -443,16 +572,23 @@ func (s *GitService) CreateBranch(localPath, name string) error {
 	if err != nil {
 		return err
 	}
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	head, err := repo.Head()
 	if err != nil {
 		return fmt.Errorf("get HEAD: %w", err)
 	}
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	ref := plumbing.NewHashReference(plumbing.NewBranchReferenceName(name), head.Hash())
 	return repo.Storer.SetReference(ref)
 }
 
+<<<<<<< HEAD
 // ensureGitignoreEntry appends an entry to .gitignore if not already present.
 func (s *GitService) ensureGitignoreEntry(localPath, entry string) {
 	gitignorePath := filepath.Join(localPath, ".gitignore")
@@ -467,12 +603,27 @@ func (s *GitService) ensureGitignoreEntry(localPath, entry string) {
 		}
 	}
 
+=======
+func (s *GitService) ensureGitignoreEntry(localPath, entry string) {
+	gitignorePath := filepath.Join(localPath, ".gitignore")
+	content, err := os.ReadFile(gitignorePath)
+	if err == nil {
+		for _, line := range strings.Split(string(content), "\n") {
+			if strings.TrimSpace(line) == entry {
+				return
+			}
+		}
+	}
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	f, err := os.OpenFile(gitignorePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return
 	}
 	defer f.Close()
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	if len(content) > 0 && !strings.HasSuffix(string(content), "\n") {
 		f.WriteString("\n")
 	}

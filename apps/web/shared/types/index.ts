@@ -33,6 +33,7 @@ export type * from "./events";
 export type * from "./api";
 export type { Attachment } from "./attachment";
 export type {
+<<<<<<< HEAD
   Project,
   CommitInfo,
   CommitDetail,
@@ -45,4 +46,9 @@ export type {
   CreateCommitRequest,
   CreateBranchRequest,
   CheckoutBranchRequest,
+=======
+  Project, CommitInfo, CommitDetail, DiffEntry, BranchInfo,
+  FileStatusEntry, GitStatus, CreateProjectRequest, UpdateProjectRequest,
+  CreateCommitRequest, CreateBranchRequest, CheckoutBranchRequest,
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 } from "./project";

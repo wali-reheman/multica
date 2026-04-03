@@ -7,20 +7,32 @@ package db
 
 import (
 	"context"
+<<<<<<< HEAD
 
 	"github.com/jackc/pgx/v5/pgtype"
+=======
+	"database/sql"
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 )
 
 const createLocalProject = `-- name: CreateLocalProject :one
 INSERT INTO local_project (
+<<<<<<< HEAD
     workspace_id, name, local_path, default_branch,
     language, file_count, size_bytes
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7
+=======
+    id, workspace_id, name, local_path, default_branch,
+    language, file_count, size_bytes
+) VALUES (
+    ?, ?, ?, ?, ?, ?, ?, ?
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 ) RETURNING id, workspace_id, name, local_path, default_branch, language, file_count, size_bytes, last_opened_at, created_at, updated_at
 `
 
 type CreateLocalProjectParams struct {
+<<<<<<< HEAD
 	WorkspaceID   pgtype.UUID `json:"workspace_id"`
 	Name          string      `json:"name"`
 	LocalPath     string      `json:"local_path"`
@@ -32,6 +44,21 @@ type CreateLocalProjectParams struct {
 
 func (q *Queries) CreateLocalProject(ctx context.Context, arg CreateLocalProjectParams) (LocalProject, error) {
 	row := q.db.QueryRow(ctx, createLocalProject,
+=======
+	ID            string         `json:"id"`
+	WorkspaceID   string         `json:"workspace_id"`
+	Name          string         `json:"name"`
+	LocalPath     string         `json:"local_path"`
+	DefaultBranch string         `json:"default_branch"`
+	Language      sql.NullString `json:"language"`
+	FileCount     int64          `json:"file_count"`
+	SizeBytes     int64          `json:"size_bytes"`
+}
+
+func (q *Queries) CreateLocalProject(ctx context.Context, arg CreateLocalProjectParams) (LocalProject, error) {
+	row := q.db.QueryRowContext(ctx, createLocalProject,
+		arg.ID,
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 		arg.WorkspaceID,
 		arg.Name,
 		arg.LocalPath,
@@ -58,21 +85,37 @@ func (q *Queries) CreateLocalProject(ctx context.Context, arg CreateLocalProject
 }
 
 const deleteLocalProject = `-- name: DeleteLocalProject :exec
+<<<<<<< HEAD
 DELETE FROM local_project WHERE id = $1
 `
 
 func (q *Queries) DeleteLocalProject(ctx context.Context, id pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, deleteLocalProject, id)
+=======
+DELETE FROM local_project WHERE id = ?
+`
+
+func (q *Queries) DeleteLocalProject(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, deleteLocalProject, id)
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	return err
 }
 
 const getLocalProject = `-- name: GetLocalProject :one
 SELECT id, workspace_id, name, local_path, default_branch, language, file_count, size_bytes, last_opened_at, created_at, updated_at FROM local_project
+<<<<<<< HEAD
 WHERE id = $1
 `
 
 func (q *Queries) GetLocalProject(ctx context.Context, id pgtype.UUID) (LocalProject, error) {
 	row := q.db.QueryRow(ctx, getLocalProject, id)
+=======
+WHERE id = ?
+`
+
+func (q *Queries) GetLocalProject(ctx context.Context, id string) (LocalProject, error) {
+	row := q.db.QueryRowContext(ctx, getLocalProject, id)
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	var i LocalProject
 	err := row.Scan(
 		&i.ID,
@@ -92,6 +135,7 @@ func (q *Queries) GetLocalProject(ctx context.Context, id pgtype.UUID) (LocalPro
 
 const getLocalProjectByPath = `-- name: GetLocalProjectByPath :one
 SELECT id, workspace_id, name, local_path, default_branch, language, file_count, size_bytes, last_opened_at, created_at, updated_at FROM local_project
+<<<<<<< HEAD
 WHERE workspace_id = $1 AND local_path = $2
 `
 
@@ -102,6 +146,18 @@ type GetLocalProjectByPathParams struct {
 
 func (q *Queries) GetLocalProjectByPath(ctx context.Context, arg GetLocalProjectByPathParams) (LocalProject, error) {
 	row := q.db.QueryRow(ctx, getLocalProjectByPath, arg.WorkspaceID, arg.LocalPath)
+=======
+WHERE workspace_id = ? AND local_path = ?
+`
+
+type GetLocalProjectByPathParams struct {
+	WorkspaceID string `json:"workspace_id"`
+	LocalPath   string `json:"local_path"`
+}
+
+func (q *Queries) GetLocalProjectByPath(ctx context.Context, arg GetLocalProjectByPathParams) (LocalProject, error) {
+	row := q.db.QueryRowContext(ctx, getLocalProjectByPath, arg.WorkspaceID, arg.LocalPath)
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	var i LocalProject
 	err := row.Scan(
 		&i.ID,
@@ -121,6 +177,7 @@ func (q *Queries) GetLocalProjectByPath(ctx context.Context, arg GetLocalProject
 
 const getLocalProjectInWorkspace = `-- name: GetLocalProjectInWorkspace :one
 SELECT id, workspace_id, name, local_path, default_branch, language, file_count, size_bytes, last_opened_at, created_at, updated_at FROM local_project
+<<<<<<< HEAD
 WHERE id = $1 AND workspace_id = $2
 `
 
@@ -131,6 +188,18 @@ type GetLocalProjectInWorkspaceParams struct {
 
 func (q *Queries) GetLocalProjectInWorkspace(ctx context.Context, arg GetLocalProjectInWorkspaceParams) (LocalProject, error) {
 	row := q.db.QueryRow(ctx, getLocalProjectInWorkspace, arg.ID, arg.WorkspaceID)
+=======
+WHERE id = ? AND workspace_id = ?
+`
+
+type GetLocalProjectInWorkspaceParams struct {
+	ID          string `json:"id"`
+	WorkspaceID string `json:"workspace_id"`
+}
+
+func (q *Queries) GetLocalProjectInWorkspace(ctx context.Context, arg GetLocalProjectInWorkspaceParams) (LocalProject, error) {
+	row := q.db.QueryRowContext(ctx, getLocalProjectInWorkspace, arg.ID, arg.WorkspaceID)
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	var i LocalProject
 	err := row.Scan(
 		&i.ID,
@@ -150,6 +219,7 @@ func (q *Queries) GetLocalProjectInWorkspace(ctx context.Context, arg GetLocalPr
 
 const listLocalProjects = `-- name: ListLocalProjects :many
 SELECT id, workspace_id, name, local_path, default_branch, language, file_count, size_bytes, last_opened_at, created_at, updated_at FROM local_project
+<<<<<<< HEAD
 WHERE workspace_id = $1
 ORDER BY last_opened_at DESC NULLS LAST, created_at DESC
 LIMIT $2 OFFSET $3
@@ -163,6 +233,21 @@ type ListLocalProjectsParams struct {
 
 func (q *Queries) ListLocalProjects(ctx context.Context, arg ListLocalProjectsParams) ([]LocalProject, error) {
 	rows, err := q.db.Query(ctx, listLocalProjects, arg.WorkspaceID, arg.Limit, arg.Offset)
+=======
+WHERE workspace_id = ?
+ORDER BY last_opened_at DESC, created_at DESC
+LIMIT ? OFFSET ?
+`
+
+type ListLocalProjectsParams struct {
+	WorkspaceID string `json:"workspace_id"`
+	Limit       int64  `json:"limit"`
+	Offset      int64  `json:"offset"`
+}
+
+func (q *Queries) ListLocalProjects(ctx context.Context, arg ListLocalProjectsParams) ([]LocalProject, error) {
+	rows, err := q.db.QueryContext(ctx, listLocalProjects, arg.WorkspaceID, arg.Limit, arg.Offset)
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	if err != nil {
 		return nil, err
 	}
@@ -187,6 +272,12 @@ func (q *Queries) ListLocalProjects(ctx context.Context, arg ListLocalProjectsPa
 		}
 		items = append(items, i)
 	}
+<<<<<<< HEAD
+=======
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -195,6 +286,7 @@ func (q *Queries) ListLocalProjects(ctx context.Context, arg ListLocalProjectsPa
 
 const updateLocalProject = `-- name: UpdateLocalProject :one
 UPDATE local_project SET
+<<<<<<< HEAD
     name = COALESCE($2, name),
     default_branch = COALESCE($3, default_branch),
     language = COALESCE($4, language),
@@ -202,10 +294,20 @@ UPDATE local_project SET
     size_bytes = COALESCE($6, size_bytes),
     updated_at = now()
 WHERE id = $1
+=======
+    name = COALESCE(?2, name),
+    default_branch = COALESCE(?3, default_branch),
+    language = COALESCE(?4, language),
+    file_count = COALESCE(?5, file_count),
+    size_bytes = COALESCE(?6, size_bytes),
+    updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+WHERE id = ?
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 RETURNING id, workspace_id, name, local_path, default_branch, language, file_count, size_bytes, last_opened_at, created_at, updated_at
 `
 
 type UpdateLocalProjectParams struct {
+<<<<<<< HEAD
 	ID            pgtype.UUID `json:"id"`
 	Name          pgtype.Text `json:"name"`
 	DefaultBranch pgtype.Text `json:"default_branch"`
@@ -217,11 +319,27 @@ type UpdateLocalProjectParams struct {
 func (q *Queries) UpdateLocalProject(ctx context.Context, arg UpdateLocalProjectParams) (LocalProject, error) {
 	row := q.db.QueryRow(ctx, updateLocalProject,
 		arg.ID,
+=======
+	Name          sql.NullString `json:"name"`
+	DefaultBranch sql.NullString `json:"default_branch"`
+	Language      sql.NullString `json:"language"`
+	FileCount     sql.NullInt64  `json:"file_count"`
+	SizeBytes     sql.NullInt64  `json:"size_bytes"`
+	ID            string         `json:"id"`
+}
+
+func (q *Queries) UpdateLocalProject(ctx context.Context, arg UpdateLocalProjectParams) (LocalProject, error) {
+	row := q.db.QueryRowContext(ctx, updateLocalProject,
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 		arg.Name,
 		arg.DefaultBranch,
 		arg.Language,
 		arg.FileCount,
 		arg.SizeBytes,
+<<<<<<< HEAD
+=======
+		arg.ID,
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	)
 	var i LocalProject
 	err := row.Scan(
@@ -242,11 +360,20 @@ func (q *Queries) UpdateLocalProject(ctx context.Context, arg UpdateLocalProject
 
 const updateLocalProjectLastOpened = `-- name: UpdateLocalProjectLastOpened :exec
 UPDATE local_project SET
+<<<<<<< HEAD
     last_opened_at = now()
 WHERE id = $1
 `
 
 func (q *Queries) UpdateLocalProjectLastOpened(ctx context.Context, id pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, updateLocalProjectLastOpened, id)
+=======
+    last_opened_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+WHERE id = ?
+`
+
+func (q *Queries) UpdateLocalProjectLastOpened(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, updateLocalProjectLastOpened, id)
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
 	return err
 }

@@ -221,6 +221,7 @@ export interface IssueReactionRemovedPayload {
   actor_id: string;
 }
 
+<<<<<<< HEAD
 export interface ProjectCreatedPayload {
   project: Project;
 }
@@ -237,3 +238,9 @@ export interface ProjectFilesChangedPayload {
   project_id: string;
   path: string;
 }
+=======
+export interface ProjectCreatedPayload { project: Project; }
+export interface ProjectUpdatedPayload { project: Project; }
+export interface ProjectDeletedPayload { project_id: string; }
+export interface ProjectFilesChangedPayload { project_id: string; path: string; }
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609

@@ -122,12 +122,18 @@ export function useRealtimeSync(ws: WSClient | null) {
       const { project } = p as ProjectCreatedPayload;
       if (project) useProjectStore.getState().addProject(project);
     });
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
     const unsubProjectUpdated = ws.on("project:updated", (p) => {
       const { project } = p as ProjectUpdatedPayload;
       if (project?.id) useProjectStore.getState().updateProject(project.id, project);
     });
+<<<<<<< HEAD
 
+=======
+>>>>>>> aef083616f315280ce283baf1ae5fd21992cd609
     const unsubProjectDeleted = ws.on("project:deleted", (p) => {
       const { project_id } = p as ProjectDeletedPayload;
       if (project_id) useProjectStore.getState().removeProject(project_id);
