@@ -214,6 +214,20 @@ type IssueToLabel struct {
 	LabelID pgtype.UUID `json:"label_id"`
 }
 
+type LocalProject struct {
+	ID            pgtype.UUID        `json:"id"`
+	WorkspaceID   pgtype.UUID        `json:"workspace_id"`
+	Name          string             `json:"name"`
+	LocalPath     string             `json:"local_path"`
+	DefaultBranch string             `json:"default_branch"`
+	Language      pgtype.Text        `json:"language"`
+	FileCount     int32              `json:"file_count"`
+	SizeBytes     int64              `json:"size_bytes"`
+	LastOpenedAt  pgtype.Timestamptz `json:"last_opened_at"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Member struct {
 	ID          pgtype.UUID        `json:"id"`
 	WorkspaceID pgtype.UUID        `json:"workspace_id"`

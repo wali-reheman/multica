@@ -231,6 +231,26 @@ func NewRouter(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus) chi.Route
 				r.Get("/{runtimeId}/update/{updateId}", h.GetUpdate)
 			})
 
+			// Projects
+			r.Route("/api/projects", func(r chi.Router) {
+				r.Get("/", h.ListProjects)
+				r.Post("/", h.CreateProject)
+				r.Route("/{projectId}", func(r chi.Router) {
+					r.Get("/", h.GetProject)
+					r.Put("/", h.UpdateProject)
+					r.Delete("/", h.DeleteProject)
+					r.Get("/commits", h.GetProjectCommits)
+					r.Get("/commits/{sha}", h.GetProjectCommitDetail)
+					r.Post("/commits", h.CreateProjectCommit)
+					r.Get("/status", h.GetProjectStatus)
+					r.Get("/branches", h.GetProjectBranches)
+					r.Post("/branches", h.CreateProjectBranch)
+					r.Post("/checkout", h.CheckoutProjectBranch)
+					r.Get("/diff", h.GetProjectDiff)
+					r.Post("/git-init", h.InitProjectGit)
+				})
+			})
+
 			// Inbox
 			r.Route("/api/inbox", func(r chi.Router) {
 				r.Get("/", h.ListInbox)

@@ -61,4 +61,10 @@ const (
 	// Daemon events
 	EventDaemonHeartbeat = "daemon:heartbeat"
 	EventDaemonRegister  = "daemon:register"
+
+	// Project events
+	EventProjectCreated      = "project:created"
+	EventProjectUpdated      = "project:updated"
+	EventProjectDeleted      = "project:deleted"
+	EventProjectFilesChanged = "project:files_changed"
 )
