@@ -1,4 +1,4 @@
-.PHONY: dev daemon cli multica build test migrate-up migrate-down sqlc seed clean setup start stop check worktree-env setup-main start-main stop-main check-main setup-worktree start-worktree stop-worktree check-worktree db-up db-down
+.PHONY: dev daemon cli multica build test migrate-up migrate-down sqlc seed clean setup start stop check worktree-env setup-main start-main stop-main check-main setup-worktree start-worktree stop-worktree check-worktree db-up db-down desktop desktop-sidecar
 
 MAIN_ENV_FILE ?= .env
 WORKTREE_ENV_FILE ?= .env.worktree
@@ -154,6 +154,21 @@ migrate-down:
 sqlc:
 	cd server && sqlc generate
 
+# Desktop (Tauri)
+desktop:
+	@bash scripts/build-desktop.sh
+
+desktop-sidecar:
+	@bash -c '\
+		REPO_ROOT="$$(pwd)"; \
+		ARCH=$$(uname -m); \
+		case $$ARCH in arm64|aarch64) ARCH=aarch64;; esac; \
+		OS=$$(uname -s); \
+		case $$OS in Darwin) TRIPLE="$$ARCH-apple-darwin";; Linux) TRIPLE="$$ARCH-unknown-linux-gnu";; esac; \
+		mkdir -p apps/desktop/src-tauri/binaries; \
+		cd server && CGO_ENABLED=0 go build -o "$$REPO_ROOT/apps/desktop/src-tauri/binaries/multica-server-$$TRIPLE" ./cmd/server; \
+		echo "Sidecar built: multica-server-$$TRIPLE"'
+
 # Cleanup
 clean:
-	rm -rf server/bin server/tmp
+	rm -rf server/bin server/tmp apps/desktop/src-tauri/binaries

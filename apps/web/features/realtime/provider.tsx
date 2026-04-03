@@ -16,7 +16,9 @@ import { useWorkspaceStore } from "@/features/workspace";
 import { createLogger } from "@/shared/logger";
 import { useRealtimeSync } from "./use-realtime-sync";
 
+// In Tauri desktop mode, the sidecar port is injected at runtime via initialization script.
 const WS_URL =
+  (typeof window !== "undefined" && (window as any).__MULTICA_WS_URL__) ||
   process.env.NEXT_PUBLIC_WS_URL ||
   (typeof window !== "undefined"
     ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws`
