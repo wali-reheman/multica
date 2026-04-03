@@ -9,6 +9,11 @@ import {
   Save,
   AlertCircle,
   Download,
+  FolderUp,
+  Bot,
+  Terminal,
+  Webhook,
+  FileText,
 } from "lucide-react";
 import type { Skill, CreateSkillRequest, UpdateSkillRequest } from "@/shared/types";
 import {
@@ -52,7 +57,7 @@ function CreateSkillDialog({
   onCreate: (data: CreateSkillRequest) => Promise<void>;
   onImport: (url: string) => Promise<void>;
 }) {
-  const [tab, setTab] = useState<"create" | "import">("create");
+  const [tab, setTab] = useState<"create" | "import" | "local">("create");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [importUrl, setImportUrl] = useState("");
@@ -96,11 +101,11 @@ function CreateSkillDialog({
         <DialogHeader>
           <DialogTitle>Add Skill</DialogTitle>
           <DialogDescription>
-            Create a new skill or import from ClawHub / Skills.sh.
+            Create a new skill, import from a registry, or sync from your local Claude Code setup.
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as "create" | "import")}>
+        <Tabs value={tab} onValueChange={(v) => setTab(v as "create" | "import" | "local")}>
           <TabsList className="w-full">
             <TabsTrigger value="create" className="flex-1">
               <Plus className="mr-1.5 h-3 w-3" />
@@ -109,6 +114,10 @@ function CreateSkillDialog({
             <TabsTrigger value="import" className="flex-1">
               <Download className="mr-1.5 h-3 w-3" />
               Import
+            </TabsTrigger>
+            <TabsTrigger value="local" className="flex-1">
+              <FolderUp className="mr-1.5 h-3 w-3" />
+              Local
             </TabsTrigger>
           </TabsList>
 
@@ -185,15 +194,51 @@ function CreateSkillDialog({
               </div>
             )}
           </TabsContent>
+
+          <TabsContent value="local" className="space-y-4 mt-4 min-h-[180px]">
+            <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <FolderUp className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Import from Claude Code</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Import your local Claude Code skills, agents, commands, hooks, and CLAUDE.md conventions
+                using the Multica CLI.
+              </p>
+              <div className="rounded-md bg-background border p-3 font-mono text-xs space-y-1.5">
+                <p className="text-muted-foreground"># Import everything from ~/.claude/</p>
+                <p>multica skill import-local</p>
+                <p className="text-muted-foreground mt-2"># Preview without importing</p>
+                <p>multica skill import-local --dry-run</p>
+                <p className="text-muted-foreground mt-2"># Import only skills</p>
+                <p>multica skill import-local --type skill</p>
+                <p className="text-muted-foreground mt-2"># Import from a project directory</p>
+                <p>multica skill import-local --path ./my-project/.claude/</p>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5 pt-1">
+                {(["skill", "agent", "command", "hook", "conventions"] as const).map((t) => {
+                  const cfg = localTypeConfig[t];
+                  const Icon = cfg.icon;
+                  return (
+                    <div key={t} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                      <Icon className="h-3 w-3" />
+                      <span className="capitalize">{cfg.label}s</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </TabsContent>
         </Tabs>
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          {tab === "create" ? (
+          {tab === "create" && (
             <Button onClick={handleCreate} disabled={loading || !name.trim()}>
               {loading ? "Creating..." : "Create"}
             </Button>
-          ) : (
+          )}
+          {tab === "import" && (
             <Button onClick={handleImport} disabled={loading || !importUrl.trim()}>
               {loading ? (
                 detectedSource === "clawhub"
@@ -216,6 +261,37 @@ function CreateSkillDialog({
 }
 
 // ---------------------------------------------------------------------------
+// Local source helpers
+// ---------------------------------------------------------------------------
+
+type LocalType = "skill" | "agent" | "command" | "hook" | "conventions";
+
+function getLocalType(skill: Skill): LocalType | null {
+  const config = skill.config;
+  if (config?.source !== "local") return null;
+  return (config.local_type as LocalType) ?? null;
+}
+
+const localTypeConfig: Record<LocalType, { icon: typeof Sparkles; label: string; color: string }> = {
+  skill:       { icon: Sparkles,  label: "Skill",       color: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
+  agent:       { icon: Bot,       label: "Agent",       color: "bg-purple-500/10 text-purple-600 dark:text-purple-400" },
+  command:     { icon: Terminal,   label: "Command",     color: "bg-green-500/10 text-green-600 dark:text-green-400" },
+  hook:        { icon: Webhook,    label: "Hook",        color: "bg-orange-500/10 text-orange-600 dark:text-orange-400" },
+  conventions: { icon: FileText,   label: "Conventions", color: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
+};
+
+function LocalTypeBadge({ localType }: { localType: LocalType }) {
+  const cfg = localTypeConfig[localType];
+  const Icon = cfg.icon;
+  return (
+    <Badge variant="secondary" className={`text-[10px] gap-1 ${cfg.color}`}>
+      <Icon className="h-2.5 w-2.5" />
+      {cfg.label}
+    </Badge>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Skill List Item
 // ---------------------------------------------------------------------------
 
@@ -228,6 +304,9 @@ function SkillListItem({
   isSelected: boolean;
   onClick: () => void;
 }) {
+  const localType = getLocalType(skill);
+  const ItemIcon = localType ? localTypeConfig[localType].icon : Sparkles;
+
   return (
     <button
       onClick={onClick}
@@ -236,10 +315,13 @@ function SkillListItem({
       }`}
     >
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
-        <Sparkles className="h-4 w-4 text-muted-foreground" />
+        <ItemIcon className="h-4 w-4 text-muted-foreground" />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-medium">{skill.name}</div>
+        <div className="flex items-center gap-2">
+          <span className="truncate text-sm font-medium">{skill.name}</span>
+          {localType && <LocalTypeBadge localType={localType} />}
+        </div>
         {skill.description && (
           <div className="mt-0.5 truncate text-xs text-muted-foreground">
             {skill.description}
