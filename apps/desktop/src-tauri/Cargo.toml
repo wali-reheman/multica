@@ -1,0 +1,32 @@
+[package]
+name = "multica-desktop"
+version = "0.1.0"
+description = "Multica Desktop Application"
+authors = ["Multica"]
+edition = "2021"
+
+[lib]
+name = "multica_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-shell = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-log = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+tokio = { version = "1", features = ["time", "sync"] }
+url = "2"
+log = "0.4"
+
+[features]
+custom-protocol = ["tauri/custom-protocol"]

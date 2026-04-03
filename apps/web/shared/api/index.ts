@@ -5,7 +5,12 @@ export { ApiClient } from "./client";
 export type { LoginResponse } from "./client";
 export { WSClient } from "./ws-client";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
+// In Tauri desktop mode, the sidecar port is injected at runtime via initialization script.
+// Falls back to build-time env var, then empty string (same-origin).
+const API_BASE_URL =
+  (typeof window !== "undefined" && (window as any).__MULTICA_API_URL__) ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "";
 
 export const api = new ApiClient(API_BASE_URL, { logger: createLogger("api") });
 
