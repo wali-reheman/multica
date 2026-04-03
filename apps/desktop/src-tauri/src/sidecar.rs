@@ -18,6 +18,7 @@ pub struct SidecarState {
     running: AtomicBool,
     restart_count: AtomicU32,
     health_handle: std::sync::Mutex<Option<JoinHandle<()>>>,
+    frontend_child: std::sync::Mutex<Option<std::process::Child>>,
 }
 
 impl SidecarState {
@@ -28,6 +29,7 @@ impl SidecarState {
             running: AtomicBool::new(false),
             restart_count: AtomicU32::new(0),
             health_handle: std::sync::Mutex::new(None),
+            frontend_child: std::sync::Mutex::new(None),
         }
     }
 }
@@ -110,21 +112,29 @@ pub fn start_sidecar(app: &AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-/// Wait for the sidecar to become healthy by polling /health.
+/// Wait for a server to become healthy by polling a URL.
 pub async fn wait_for_healthy(port: u16) -> Result<(), String> {
+    wait_for_url(&format!("http://localhost:{}/health", port)).await
+}
+
+/// Wait for the frontend server to respond.
+pub async fn wait_for_frontend(port: u16) -> Result<(), String> {
+    wait_for_url(&format!("http://localhost:{}/", port)).await
+}
+
+async fn wait_for_url(url: &str) -> Result<(), String> {
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(HEALTH_CHECK_TIMEOUT_SECS))
         .build()
         .map_err(|e| format!("failed to create HTTP client: {}", e))?;
 
-    let url = format!("http://localhost:{}/health", port);
     let deadline =
         tokio::time::Instant::now() + std::time::Duration::from_secs(STARTUP_TIMEOUT_SECS);
 
     while tokio::time::Instant::now() < deadline {
-        match client.get(&url).send().await {
-            Ok(resp) if resp.status().is_success() => {
-                log::info!("sidecar is healthy on port {}", port);
+        match client.get(url).send().await {
+            Ok(resp) if resp.status().is_success() || resp.status().is_redirection() => {
+                log::info!("server healthy: {}", url);
                 return Ok(());
             }
             _ => {
@@ -134,8 +144,8 @@ pub async fn wait_for_healthy(port: u16) -> Result<(), String> {
     }
 
     Err(format!(
-        "sidecar failed to become healthy within {}s",
-        STARTUP_TIMEOUT_SECS
+        "server at {} failed to become healthy within {}s",
+        url, STARTUP_TIMEOUT_SECS
     ))
 }
 
@@ -191,7 +201,59 @@ pub fn start_health_monitor(app: &AppHandle) {
     *state.health_handle.lock().unwrap() = Some(handle);
 }
 
-/// Gracefully shut down the sidecar process.
+/// Start the Next.js standalone frontend server.
+pub fn start_frontend(app: &AppHandle, frontend_port: u16, api_port: u16) -> Result<(), String> {
+    let state = app.state::<Arc<SidecarState>>();
+
+    // Resolve the frontend server.js path.
+    // In development: use the web app's .next/standalone/ directory.
+    // In production: use the bundled resources/frontend/ directory.
+    let resource_dir = app
+        .path()
+        .resource_dir()
+        .map_err(|e| format!("failed to resolve resource dir: {}", e))?;
+
+    let standalone_dir = resource_dir.join("frontend");
+    let server_js = standalone_dir.join("server.js");
+
+    // Fall back to the development path
+    let (server_js, working_dir) = if server_js.exists() {
+        (server_js, standalone_dir)
+    } else {
+        // Development: look for the standalone build relative to the project
+        let dev_standalone = std::env::current_dir()
+            .unwrap_or_default()
+            .join("../../web/.next/standalone/apps/web");
+        let dev_server_js = dev_standalone.join("server.js");
+        if dev_server_js.exists() {
+            (dev_server_js, dev_standalone)
+        } else {
+            return Err(
+                "Next.js standalone server not found. Run `NEXT_OUTPUT=standalone pnpm build` in apps/web/ first.".into()
+            );
+        }
+    };
+
+    log::info!("starting frontend server on port {} from {:?}", frontend_port, server_js);
+
+    let child = std::process::Command::new("node")
+        .arg(&server_js)
+        .env("PORT", frontend_port.to_string())
+        .env("HOSTNAME", "localhost")
+        .env("NEXT_PUBLIC_API_URL", format!("http://localhost:{}", api_port))
+        .env("NEXT_PUBLIC_WS_URL", format!("ws://localhost:{}/ws", api_port))
+        .current_dir(&working_dir)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("failed to start frontend server (is Node.js installed?): {}", e))?;
+
+    *state.frontend_child.lock().unwrap() = Some(child);
+
+    Ok(())
+}
+
+/// Gracefully shut down all managed processes.
 pub fn shutdown_sidecar(app: &AppHandle) {
     let state = app.state::<Arc<SidecarState>>();
 
@@ -200,10 +262,17 @@ pub fn shutdown_sidecar(app: &AppHandle) {
         handle.abort();
     }
 
-    // Kill the sidecar child process
+    // Kill the Go sidecar child process
     if let Some(child) = state.child.lock().unwrap().take() {
-        log::info!("shutting down sidecar");
+        log::info!("shutting down Go server");
         let _ = child.kill();
     }
+
+    // Kill the frontend server process
+    if let Some(mut child) = state.frontend_child.lock().unwrap().take() {
+        log::info!("shutting down frontend server");
+        let _ = child.kill();
+    }
+
     state.running.store(false, Ordering::SeqCst);
 }

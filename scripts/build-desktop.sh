@@ -34,6 +34,12 @@ CGO_ENABLED=0 go build -o "$BINARIES_DIR/multica-server-${TARGET_TRIPLE}" ./cmd/
 
 echo "==> Sidecar binary ready: multica-server-${TARGET_TRIPLE}"
 
+echo "==> Building Next.js frontend (standalone mode)"
+cd "$REPO_ROOT/apps/web"
+NEXT_OUTPUT=standalone npx next build
+
+echo "==> Next.js standalone build complete"
+
 echo "==> Building desktop app..."
 cd "$REPO_ROOT/apps/desktop"
 cargo tauri build
