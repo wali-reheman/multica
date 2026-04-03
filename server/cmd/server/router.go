@@ -172,6 +172,10 @@ func NewRouter(sqlDB *sql.DB, hub *realtime.Hub, bus *events.Bus) chi.Router {
 					r.Post("/reactions", h.AddIssueReaction)
 					r.Delete("/reactions", h.RemoveIssueReaction)
 					r.Get("/attachments", h.ListAttachments)
+					// MULTICA-LOCAL: Stage 4 — Direct agent execution
+					r.Post("/run-agent", h.RunAgentOnIssue)
+					r.Get("/agent-diff", h.GetIssueDiff)
+					r.Post("/agent-commit", h.CommitAgentChanges)
 				})
 			})
 
@@ -213,6 +217,23 @@ func NewRouter(sqlDB *sql.DB, hub *realtime.Hub, bus *events.Bus) chi.Router {
 				})
 			})
 
+			// MULTICA-LOCAL: Stage 4 — Local agent runtime management & skills
+			r.Route("/api/local", func(r chi.Router) {
+				r.Route("/agents", func(r chi.Router) {
+					r.Get("/", h.ListLocalAgents)
+					r.Post("/detect", h.DetectLocalAgents)
+					r.Post("/health-check", h.HealthCheckLocalAgents)
+					r.Put("/{provider}/path", h.SetLocalAgentPath)
+				})
+				r.Route("/skills", func(r chi.Router) {
+					r.Get("/", h.ListLocalSkills)
+					r.Post("/", h.CreateLocalSkill)
+					r.Put("/{id}", h.UpdateLocalSkill)
+					r.Delete("/{id}", h.DeleteLocalSkill)
+				})
+			})
+
+			// Runtimes
 			r.Route("/api/runtimes", func(r chi.Router) {
 				r.Get("/", h.ListAgentRuntimes)
 				r.Get("/{runtimeId}/usage", h.GetRuntimeUsage)
