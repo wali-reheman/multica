@@ -42,3 +42,5 @@ export type {
   FileStatusEntry, GitStatus, CreateProjectRequest, UpdateProjectRequest,
   CreateCommitRequest, CreateBranchRequest, CheckoutBranchRequest,
 } from "./project";
+export type { Label } from "./label";
+export type { IssueDependency, DependencyType } from "./dependency";

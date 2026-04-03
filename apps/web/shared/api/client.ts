@@ -43,6 +43,9 @@ import type {
   IssueDiffResponse,
   CommitResponse,
   LocalSkill,
+  Label,
+  IssueDependency,
+  DependencyType,
 } from "@/shared/types";
 import { type Logger, noopLogger } from "@/shared/logger";
 
@@ -721,5 +724,68 @@ export class ApiClient {
 
   async initProjectGit(projectId: string): Promise<{ initialized: boolean }> {
     return this.fetch(`/api/projects/${projectId}/git-init`, { method: "POST" });
+  }
+
+  // Labels
+  async listLabels(): Promise<Label[]> {
+    return this.fetch("/api/labels");
+  }
+
+  async createLabel(data: { name: string; color: string }): Promise<Label> {
+    return this.fetch("/api/labels", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateLabel(id: string, data: { name: string; color: string }): Promise<Label> {
+    return this.fetch(`/api/labels/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteLabel(id: string): Promise<void> {
+    await this.fetch(`/api/labels/${id}`, { method: "DELETE" });
+  }
+
+  async listIssueLabels(issueId: string): Promise<Label[]> {
+    return this.fetch(`/api/issues/${issueId}/labels`);
+  }
+
+  async addIssueLabel(issueId: string, labelId: string): Promise<void> {
+    await this.fetch(`/api/issues/${issueId}/labels`, {
+      method: "POST",
+      body: JSON.stringify({ label_id: labelId }),
+    });
+  }
+
+  async removeIssueLabel(issueId: string, labelId: string): Promise<void> {
+    await this.fetch(`/api/issues/${issueId}/labels`, {
+      method: "DELETE",
+      body: JSON.stringify({ label_id: labelId }),
+    });
+  }
+
+  // Dependencies
+  async listIssueDependencies(issueId: string): Promise<IssueDependency[]> {
+    return this.fetch(`/api/issues/${issueId}/dependencies`);
+  }
+
+  async createIssueDependency(
+    issueId: string,
+    dependsOnIssueId: string,
+    type: DependencyType,
+  ): Promise<IssueDependency> {
+    return this.fetch(`/api/issues/${issueId}/dependencies`, {
+      method: "POST",
+      body: JSON.stringify({ depends_on_issue_id: dependsOnIssueId, type }),
+    });
+  }
+
+  async deleteIssueDependency(issueId: string, depId: string): Promise<void> {
+    await this.fetch(`/api/issues/${issueId}/dependencies/${depId}`, {
+      method: "DELETE",
+    });
   }
 }

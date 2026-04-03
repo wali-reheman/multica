@@ -151,6 +151,17 @@ func NewRouter(sqlDB *sql.DB, hub *realtime.Hub, bus *events.Bus) chi.Router {
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.RequireWorkspaceMember(queries))
 
+			// Labels
+			r.Route("/api/labels", func(r chi.Router) {
+				r.Get("/", h.ListLabels)
+				r.Post("/", h.CreateLabel)
+				r.Route("/{labelId}", func(r chi.Router) {
+					r.Put("/", h.UpdateLabel)
+					r.Delete("/", h.DeleteLabel)
+				})
+			})
+
+			// Issues
 			r.Route("/api/issues", func(r chi.Router) {
 				r.Get("/", h.ListIssues)
 				r.Post("/", h.CreateIssue)
@@ -176,6 +187,12 @@ func NewRouter(sqlDB *sql.DB, hub *realtime.Hub, bus *events.Bus) chi.Router {
 					r.Post("/run-agent", h.RunAgentOnIssue)
 					r.Get("/agent-diff", h.GetIssueDiff)
 					r.Post("/agent-commit", h.CommitAgentChanges)
+					r.Get("/labels", h.ListIssueLabels)
+					r.Post("/labels", h.AddIssueLabel)
+					r.Delete("/labels", h.RemoveIssueLabel)
+					r.Get("/dependencies", h.ListIssueDependencies)
+					r.Post("/dependencies", h.CreateIssueDependency)
+					r.Delete("/dependencies/{depId}", h.DeleteIssueDependency)
 				})
 			})
 
