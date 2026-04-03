@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { AuthInitializer } from "@/features/auth";
 import { WSProvider } from "@/features/realtime";
 import { ModalRegistry } from "@/features/modals";
+import { CommandPalette } from "@/features/command-palette";
 import "./globals.css";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
@@ -71,6 +72,7 @@ export default async function RootLayout({
             <WSProvider>{children}</WSProvider>
           </AuthInitializer>
           <ModalRegistry />
+          <CommandPalette />
           <Toaster />
         </ThemeProvider>
       </body>

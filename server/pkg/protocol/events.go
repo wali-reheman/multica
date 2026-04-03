@@ -58,6 +58,11 @@ const (
 	EventSkillUpdated = "skill:updated"
 	EventSkillDeleted = "skill:deleted"
 
+	// Label events
+	EventLabelCreated = "label:created"
+	EventLabelUpdated = "label:updated"
+	EventLabelDeleted = "label:deleted"
+
 	// Daemon events
 	EventDaemonHeartbeat = "daemon:heartbeat"
 	EventDaemonRegister  = "daemon:register"

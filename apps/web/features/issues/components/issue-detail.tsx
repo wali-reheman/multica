@@ -73,6 +73,9 @@ import { useIssueSubscribers } from "@/features/issues/hooks/use-issue-subscribe
 import { ReactionBar } from "@/components/common/reaction-bar";
 import { useFileUpload } from "@/shared/hooks/use-file-upload";
 import { timeAgo } from "@/shared/utils";
+import type { Label } from "@/shared/types";
+import { LabelPicker } from "@/features/labels";
+import { DependencySection } from "./dependencies/dependency-section";
 
 function shortDate(date: string | null): string {
   if (!date) return "—";
@@ -237,6 +240,12 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
   const {
     subscribers, loading: subscribersLoading, isSubscribed, toggleSubscribe: handleToggleSubscribe, toggleSubscriber,
   } = useIssueSubscribers(id, user?.id);
+
+  // Labels
+  const [issueLabels, setIssueLabels] = useState<Label[]>([]);
+  useEffect(() => {
+    api.listIssueLabels(id).then(setIssueLabels).catch(() => {});
+  }, [id]);
 
   const loading = issueLoading;
 
@@ -1016,6 +1025,20 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
                   dueDate={issue.due_date}
                   onUpdate={handleUpdateField}
                 />
+              </PropRow>
+
+              {/* Labels */}
+              <PropRow label="Labels">
+                <LabelPicker
+                  issueId={id}
+                  issueLabels={issueLabels}
+                  onLabelsChange={setIssueLabels}
+                />
+              </PropRow>
+
+              {/* Dependencies */}
+              <PropRow label="Relations">
+                <DependencySection issueId={id} />
               </PropRow>
             </div>}
           </div>

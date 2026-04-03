@@ -4,9 +4,11 @@ import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { MulticaIcon } from "@/components/multica-icon";
 import { useNavigationStore } from "@/features/navigation";
+import { useGlobalShortcuts } from "@/features/keyboard-shortcuts";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { useAuthStore } from "@/features/auth";
 import { useWorkspaceStore } from "@/features/workspace";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { AppSidebar } from "./_components/app-sidebar";
 
 export default function DashboardLayout({
@@ -19,6 +21,8 @@ export default function DashboardLayout({
   const user = useAuthStore((s) => s.user);
   const isLoading = useAuthStore((s) => s.isLoading);
   const workspace = useWorkspaceStore((s) => s.workspace);
+
+  useGlobalShortcuts();
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -45,7 +49,7 @@ export default function DashboardLayout({
       <AppSidebar />
       <SidebarInset className="overflow-hidden">
         {workspace ? (
-          children
+          <ErrorBoundary>{children}</ErrorBoundary>
         ) : (
           <div className="flex flex-1 items-center justify-center">
             <MulticaIcon className="size-6 animate-pulse" />

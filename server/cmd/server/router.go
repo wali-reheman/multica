@@ -153,6 +153,16 @@ func NewRouter(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus) chi.Route
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.RequireWorkspaceMember(queries))
 
+			// Labels
+			r.Route("/api/labels", func(r chi.Router) {
+				r.Get("/", h.ListLabels)
+				r.Post("/", h.CreateLabel)
+				r.Route("/{labelId}", func(r chi.Router) {
+					r.Put("/", h.UpdateLabel)
+					r.Delete("/", h.DeleteLabel)
+				})
+			})
+
 			// Issues
 			r.Route("/api/issues", func(r chi.Router) {
 				r.Get("/", h.ListIssues)
@@ -175,6 +185,12 @@ func NewRouter(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus) chi.Route
 					r.Post("/reactions", h.AddIssueReaction)
 					r.Delete("/reactions", h.RemoveIssueReaction)
 					r.Get("/attachments", h.ListAttachments)
+					r.Get("/labels", h.ListIssueLabels)
+					r.Post("/labels", h.AddIssueLabel)
+					r.Delete("/labels", h.RemoveIssueLabel)
+					r.Get("/dependencies", h.ListIssueDependencies)
+					r.Post("/dependencies", h.CreateIssueDependency)
+					r.Delete("/dependencies/{depId}", h.DeleteIssueDependency)
 				})
 			})
 
