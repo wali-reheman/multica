@@ -22,6 +22,7 @@ const (
 	localTypeAgent       localItemType = "agent"
 	localTypeCommand     localItemType = "command"
 	localTypeHook        localItemType = "hook"
+	localTypeRule        localItemType = "rule"
 	localTypeConventions localItemType = "conventions"
 )
 
@@ -42,35 +43,44 @@ type localImportFile struct {
 
 var skillImportLocalCmd = &cobra.Command{
 	Use:   "import-local",
-	Short: "Import skills, agents, commands, and hooks from a local Claude Code directory",
-	Long: `Scan a local Claude Code directory (defaults to ~/.claude/) and import
-artifacts into the current Multica workspace as skills.
+	Short: "Import skills, agents, commands, hooks, and rules from a local Claude Code directory",
+	Long: `Scan a local Claude Code directory and import artifacts into the current
+Multica workspace as skills.
+
+The path can point to:
+  1. A .claude/ directory directly (e.g. ~/.claude/ or ./my-project/.claude/)
+  2. A project root that contains a .claude/ subdirectory — the tool will
+     auto-detect the .claude/ folder and also pick up CLAUDE.md from the
+     project root
 
 Supported types:
   skill       SKILL.md-based skills from skills/ directory
   agent       Agent definitions from agents/ directory
   command     Slash commands from commands/ directory
   hook        Hook scripts from hooks/ directory
+  rule        Coding rules from rules/ directory
   conventions CLAUDE.md coding conventions
   all         All of the above (default)
 
-Each imported item is stored as a Multica skill with source metadata in
-its config field, so you can identify locally-imported items in the UI.
+Use --prefix to namespace imports from different workflows, so they
+don't collide (e.g. --prefix "research:" prefixes all names).
 
 Examples:
-  multica skill import-local                        # Import everything from ~/.claude/
-  multica skill import-local --path ~/my-project/.claude/
-  multica skill import-local --type skill            # Only skills
-  multica skill import-local --type agent,command    # Agents and commands
-  multica skill import-local --dry-run               # Preview without importing`,
+  multica skill import-local                           # Import from ~/.claude/
+  multica skill import-local --path ~/my-project/      # Auto-detect .claude/ in project
+  multica skill import-local --path ./workflows/review/.claude/
+  multica skill import-local --type skill,agent        # Only skills and agents
+  multica skill import-local --prefix "research:"      # Namespace all imports
+  multica skill import-local --dry-run                 # Preview without importing`,
 	RunE: runSkillImportLocal,
 }
 
 func init() {
 	skillCmd.AddCommand(skillImportLocalCmd)
 
-	skillImportLocalCmd.Flags().String("path", "", "Root directory to scan (default: ~/.claude/)")
-	skillImportLocalCmd.Flags().String("type", "all", "What to import: skill, agent, command, hook, conventions, all (comma-separated)")
+	skillImportLocalCmd.Flags().String("path", "", "Directory to scan (default: ~/.claude/). Can be a .claude/ dir or a project root containing one")
+	skillImportLocalCmd.Flags().String("type", "all", "What to import: skill, agent, command, hook, rule, conventions, all (comma-separated)")
+	skillImportLocalCmd.Flags().String("prefix", "", "Prefix to add to all imported skill names (e.g. 'research:' or 'my-workflow/')")
 	skillImportLocalCmd.Flags().Bool("dry-run", false, "Preview what would be imported without creating anything")
 	skillImportLocalCmd.Flags().String("output", "table", "Output format: table or json")
 }
@@ -91,12 +101,28 @@ func runSkillImportLocal(cmd *cobra.Command, _ []string) error {
 		rootPath = filepath.Join(home, rootPath[1:])
 	}
 
+	// Convert to absolute path
+	rootPath, _ = filepath.Abs(rootPath)
+
 	info, err := os.Stat(rootPath)
 	if err != nil || !info.IsDir() {
 		return fmt.Errorf("directory not found: %s", rootPath)
 	}
 
+	// Auto-detect: if the path is a project root (has .claude/ subdirectory),
+	// use that as the scan root. Also track the project root for CLAUDE.md.
+	scanRoot := rootPath
+	projectRoot := "" // set when we detect a project root vs a .claude/ directory
+	claudeSubDir := filepath.Join(rootPath, ".claude")
+	if info, err := os.Stat(claudeSubDir); err == nil && info.IsDir() {
+		// Path is a project root containing .claude/
+		projectRoot = rootPath
+		scanRoot = claudeSubDir
+		fmt.Fprintf(os.Stderr, "Detected .claude/ in project root, scanning: %s\n", scanRoot)
+	}
+
 	typeFlag, _ := cmd.Flags().GetString("type")
+	prefix, _ := cmd.Flags().GetString("prefix")
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
 	output, _ := cmd.Flags().GetString("output")
 
@@ -106,7 +132,7 @@ func runSkillImportLocal(cmd *cobra.Command, _ []string) error {
 	var items []localImportItem
 
 	if types["skill"] {
-		found, err := discoverSkills(rootPath)
+		found, err := discoverSkills(scanRoot)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: error scanning skills: %v\n", err)
 		}
@@ -114,7 +140,7 @@ func runSkillImportLocal(cmd *cobra.Command, _ []string) error {
 	}
 
 	if types["agent"] {
-		found, err := discoverAgents(rootPath)
+		found, err := discoverAgents(scanRoot)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: error scanning agents: %v\n", err)
 		}
@@ -122,7 +148,7 @@ func runSkillImportLocal(cmd *cobra.Command, _ []string) error {
 	}
 
 	if types["command"] {
-		found, err := discoverCommands(rootPath)
+		found, err := discoverCommands(scanRoot)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: error scanning commands: %v\n", err)
 		}
@@ -130,24 +156,51 @@ func runSkillImportLocal(cmd *cobra.Command, _ []string) error {
 	}
 
 	if types["hook"] {
-		found, err := discoverHooks(rootPath)
+		found, err := discoverHooks(scanRoot)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: error scanning hooks: %v\n", err)
 		}
 		items = append(items, found...)
 	}
 
+	if types["rule"] {
+		found, err := discoverRules(scanRoot)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: error scanning rules: %v\n", err)
+		}
+		items = append(items, found...)
+	}
+
 	if types["conventions"] {
-		found, err := discoverConventions(rootPath)
+		// Look for CLAUDE.md in both the scan root and the project root
+		found, err := discoverConventions(scanRoot)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: error scanning conventions: %v\n", err)
 		}
 		items = append(items, found...)
+
+		// If we detected a project root, also check for CLAUDE.md there
+		if projectRoot != "" {
+			found, err := discoverConventions(projectRoot)
+			if err == nil && len(found) > 0 {
+				// Rename to distinguish from global
+				found[0].Name = "project-claude-md"
+				found[0].Description = "Project-level CLAUDE.md coding conventions"
+				items = append(items, found...)
+			}
+		}
 	}
 
 	if len(items) == 0 {
 		fmt.Println("No items found to import.")
 		return nil
+	}
+
+	// Apply prefix to all item names
+	if prefix != "" {
+		for i := range items {
+			items[i].Name = prefix + items[i].Name
+		}
 	}
 
 	// Dry run — just list
@@ -173,6 +226,7 @@ func parseTypeFlags(flag string) map[string]bool {
 		m["agent"] = true
 		m["command"] = true
 		m["hook"] = true
+		m["rule"] = true
 		m["conventions"] = true
 		return m
 	}
@@ -388,6 +442,52 @@ func discoverHooks(root string) ([]localImportItem, error) {
 			Description: description,
 			Content:     string(content),
 			Type:        localTypeHook,
+			SourcePath:  path,
+		})
+	}
+	return items, nil
+}
+
+// discoverRules scans <root>/rules/*.md
+func discoverRules(root string) ([]localImportItem, error) {
+	rulesDir := filepath.Join(root, "rules")
+	entries, err := os.ReadDir(rulesDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	var items []localImportItem
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+			continue
+		}
+		path := filepath.Join(rulesDir, e.Name())
+		content, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		if len(content) > 1<<20 {
+			continue
+		}
+
+		baseName := strings.TrimSuffix(e.Name(), ".md")
+		name := "rule:" + baseName
+		description := firstLine(string(content))
+		if description == "" {
+			description = fmt.Sprintf("Coding rule: %s", baseName)
+		}
+		if len(description) > 120 {
+			description = description[:117] + "..."
+		}
+
+		items = append(items, localImportItem{
+			Name:        name,
+			Description: description,
+			Content:     string(content),
+			Type:        localTypeRule,
 			SourcePath:  path,
 		})
 	}

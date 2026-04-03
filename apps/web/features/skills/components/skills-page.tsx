@@ -14,6 +14,7 @@ import {
   Terminal,
   Webhook,
   FileText,
+  Scale,
 } from "lucide-react";
 import type { Skill, CreateSkillRequest, UpdateSkillRequest } from "@/shared/types";
 import {
@@ -264,7 +265,7 @@ function CreateSkillDialog({
 // Local source helpers
 // ---------------------------------------------------------------------------
 
-type LocalType = "skill" | "agent" | "command" | "hook" | "conventions";
+type LocalType = "skill" | "agent" | "command" | "hook" | "rule" | "conventions";
 
 function getLocalType(skill: Skill): LocalType | null {
   const config = skill.config;
@@ -277,6 +278,7 @@ const localTypeConfig: Record<LocalType, { icon: typeof Sparkles; label: string;
   agent:       { icon: Bot,       label: "Agent",       color: "bg-purple-500/10 text-purple-600 dark:text-purple-400" },
   command:     { icon: Terminal,   label: "Command",     color: "bg-green-500/10 text-green-600 dark:text-green-400" },
   hook:        { icon: Webhook,    label: "Hook",        color: "bg-orange-500/10 text-orange-600 dark:text-orange-400" },
+  rule:        { icon: Scale,      label: "Rule",        color: "bg-rose-500/10 text-rose-600 dark:text-rose-400" },
   conventions: { icon: FileText,   label: "Conventions", color: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
 };
 
