@@ -15,6 +15,7 @@ import {
   BookOpenText,
   SquarePen,
   CircleUser,
+  FolderGit2,
 } from "lucide-react";
 import { WorkspaceAvatar } from "@/features/workspace";
 import { useIssueDraftStore } from "@/features/issues/stores/draft-store";
@@ -52,6 +53,7 @@ const primaryNav = [
 ];
 
 const workspaceNav = [
+  { href: "/projects", label: "Projects", icon: FolderGit2 },
   { href: "/agents", label: "Agents", icon: Bot },
   { href: "/runtimes", label: "Runtimes", icon: Monitor },
   { href: "/skills", label: "Skills", icon: BookOpenText },

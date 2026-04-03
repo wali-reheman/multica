@@ -35,6 +35,9 @@ import type {
   TimelineEntry,
   TaskMessagePayload,
   Attachment,
+  Project, CreateProjectRequest, UpdateProjectRequest,
+  CommitInfo, CommitDetail, BranchInfo, GitStatus,
+  CreateCommitRequest, CreateBranchRequest, CheckoutBranchRequest, DiffEntry,
 } from "@/shared/types";
 import { type Logger, noopLogger } from "@/shared/logger";
 
@@ -585,5 +588,68 @@ export class ApiClient {
 
   async deleteAttachment(id: string): Promise<void> {
     await this.fetch(`/api/attachments/${id}`, { method: "DELETE" });
+  }
+
+  // Projects
+  async listProjects(params?: { limit?: number; offset?: number }): Promise<{ projects: Project[]; total: number }> {
+    const search = new URLSearchParams();
+    if (params?.limit) search.set("limit", String(params.limit));
+    if (params?.offset) search.set("offset", String(params.offset));
+    return this.fetch(`/api/projects?${search}`);
+  }
+
+  async getProject(id: string): Promise<Project> {
+    return this.fetch(`/api/projects/${id}`);
+  }
+
+  async createProject(data: CreateProjectRequest): Promise<Project> {
+    return this.fetch("/api/projects", { method: "POST", body: JSON.stringify(data) });
+  }
+
+  async updateProject(id: string, data: UpdateProjectRequest): Promise<Project> {
+    return this.fetch(`/api/projects/${id}`, { method: "PUT", body: JSON.stringify(data) });
+  }
+
+  async deleteProject(id: string): Promise<void> {
+    await this.fetch(`/api/projects/${id}`, { method: "DELETE" });
+  }
+
+  async getProjectCommits(projectId: string, params?: { limit?: number; offset?: number }): Promise<{ commits: CommitInfo[]; total: number }> {
+    const search = new URLSearchParams();
+    if (params?.limit) search.set("limit", String(params.limit));
+    if (params?.offset) search.set("offset", String(params.offset));
+    return this.fetch(`/api/projects/${projectId}/commits?${search}`);
+  }
+
+  async getProjectCommitDetail(projectId: string, sha: string): Promise<CommitDetail> {
+    return this.fetch(`/api/projects/${projectId}/commits/${sha}`);
+  }
+
+  async getProjectStatus(projectId: string): Promise<GitStatus> {
+    return this.fetch(`/api/projects/${projectId}/status`);
+  }
+
+  async createProjectCommit(projectId: string, data: CreateCommitRequest): Promise<{ hash: string }> {
+    return this.fetch(`/api/projects/${projectId}/commits`, { method: "POST", body: JSON.stringify(data) });
+  }
+
+  async getProjectBranches(projectId: string): Promise<{ branches: BranchInfo[] }> {
+    return this.fetch(`/api/projects/${projectId}/branches`);
+  }
+
+  async createProjectBranch(projectId: string, data: CreateBranchRequest): Promise<{ name: string }> {
+    return this.fetch(`/api/projects/${projectId}/branches`, { method: "POST", body: JSON.stringify(data) });
+  }
+
+  async checkoutProjectBranch(projectId: string, data: CheckoutBranchRequest): Promise<{ branch: string }> {
+    return this.fetch(`/api/projects/${projectId}/checkout`, { method: "POST", body: JSON.stringify(data) });
+  }
+
+  async getProjectDiff(projectId: string): Promise<{ diffs: DiffEntry[] }> {
+    return this.fetch(`/api/projects/${projectId}/diff`);
+  }
+
+  async initProjectGit(projectId: string): Promise<{ initialized: boolean }> {
+    return this.fetch(`/api/projects/${projectId}/git-init`, { method: "POST" });
   }
 }

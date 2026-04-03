@@ -25,28 +25,32 @@ import (
 )
 
 type Handler struct {
-	Queries      *db.Queries
-	DB           *sql.DB
-	Hub          *realtime.Hub
-	Bus          *events.Bus
-	TaskService  *service.TaskService
-	PingStore    *PingStore
-	UpdateStore  *UpdateStore
-	Storage      storage.Storage
-	CFSigner     *auth.CloudFrontSigner // nil in local mode
-	EmailService *service.EmailService  // nil in local mode
+	Queries        *db.Queries
+	DB             *sql.DB
+	Hub            *realtime.Hub
+	Bus            *events.Bus
+	TaskService    *service.TaskService
+	GitService     *service.GitService     // MULTICA-LOCAL: git integration
+	WatcherService *service.WatcherService // MULTICA-LOCAL: file watcher
+	PingStore      *PingStore
+	UpdateStore    *UpdateStore
+	Storage        storage.Storage
+	CFSigner       *auth.CloudFrontSigner // nil in local mode
+	EmailService   *service.EmailService  // nil in local mode
 }
 
 func New(queries *db.Queries, sqlDB *sql.DB, hub *realtime.Hub, bus *events.Bus, stor storage.Storage) *Handler {
 	return &Handler{
-		Queries:     queries,
-		DB:          sqlDB,
-		Hub:         hub,
-		Bus:         bus,
-		TaskService: service.NewTaskService(queries, hub, bus),
-		PingStore:   NewPingStore(),
-		UpdateStore: NewUpdateStore(),
-		Storage:     stor,
+		Queries:        queries,
+		DB:             sqlDB,
+		Hub:            hub,
+		Bus:            bus,
+		TaskService:    service.NewTaskService(queries, hub, bus),
+		GitService:     service.NewGitService(),
+		WatcherService: service.NewWatcherService(bus),
+		PingStore:      NewPingStore(),
+		UpdateStore:    NewUpdateStore(),
+		Storage:        stor,
 	}
 }
 

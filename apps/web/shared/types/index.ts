@@ -32,3 +32,8 @@ export type { IssueSubscriber } from "./subscriber";
 export type * from "./events";
 export type * from "./api";
 export type { Attachment } from "./attachment";
+export type {
+  Project, CommitInfo, CommitDetail, DiffEntry, BranchInfo,
+  FileStatusEntry, GitStatus, CreateProjectRequest, UpdateProjectRequest,
+  CreateCommitRequest, CreateBranchRequest, CheckoutBranchRequest,
+} from "./project";

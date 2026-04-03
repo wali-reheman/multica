@@ -7,6 +7,7 @@ import { useIssueStore } from "@/features/issues";
 import { useInboxStore } from "@/features/inbox";
 import { useWorkspaceStore } from "@/features/workspace";
 import { useAuthStore } from "@/features/auth";
+import { useProjectStore } from "@/features/projects";
 import { createLogger } from "@/shared/logger";
 import { api } from "@/shared/api";
 import type {
@@ -17,6 +18,9 @@ import type {
   IssueCreatedPayload,
   IssueDeletedPayload,
   InboxNewPayload,
+  ProjectCreatedPayload,
+  ProjectUpdatedPayload,
+  ProjectDeletedPayload,
 } from "@/shared/types";
 
 const logger = createLogger("realtime-sync");
@@ -40,6 +44,7 @@ export function useRealtimeSync(ws: WSClient | null) {
     // Event types handled by specific handlers below — skip generic refresh
     const specificEvents = new Set([
       "issue:updated", "issue:created", "issue:deleted", "inbox:new",
+      "project:created", "project:updated", "project:deleted",
     ]);
 
     const refreshMap: Record<string, () => void> = {
@@ -113,6 +118,19 @@ export function useRealtimeSync(ws: WSClient | null) {
       if (item) useInboxStore.getState().addItem(item);
     });
 
+    const unsubProjectCreated = ws.on("project:created", (p) => {
+      const { project } = p as ProjectCreatedPayload;
+      if (project) useProjectStore.getState().addProject(project);
+    });
+    const unsubProjectUpdated = ws.on("project:updated", (p) => {
+      const { project } = p as ProjectUpdatedPayload;
+      if (project?.id) useProjectStore.getState().updateProject(project.id, project);
+    });
+    const unsubProjectDeleted = ws.on("project:deleted", (p) => {
+      const { project_id } = p as ProjectDeletedPayload;
+      if (project_id) useProjectStore.getState().removeProject(project_id);
+    });
+
     // --- Side-effect handlers (toast, navigation) ---
 
     const unsubWsDeleted = ws.on("workspace:deleted", (p) => {
@@ -152,6 +170,9 @@ export function useRealtimeSync(ws: WSClient | null) {
       unsubIssueCreated();
       unsubIssueDeleted();
       unsubInboxNew();
+      unsubProjectCreated();
+      unsubProjectUpdated();
+      unsubProjectDeleted();
       unsubWsDeleted();
       unsubMemberRemoved();
       unsubMemberAdded();
@@ -173,6 +194,7 @@ export function useRealtimeSync(ws: WSClient | null) {
           useWorkspaceStore.getState().refreshAgents(),
           useWorkspaceStore.getState().refreshMembers(),
           useWorkspaceStore.getState().refreshSkills(),
+          useProjectStore.getState().fetch(),
         ]);
       } catch (e) {
         logger.error("reconnect refetch failed", e);

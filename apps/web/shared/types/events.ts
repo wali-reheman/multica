@@ -4,6 +4,7 @@ import type { InboxItem } from "./inbox";
 import type { Comment, Reaction } from "./comment";
 import type { TimelineEntry } from "./activity";
 import type { Workspace, MemberWithUser } from "./workspace";
+import type { Project } from "./project";
 
 // WebSocket event types (matching Go server protocol/events.go)
 export type WSEventType =
@@ -44,7 +45,11 @@ export type WSEventType =
   | "reaction:added"
   | "reaction:removed"
   | "issue_reaction:added"
-  | "issue_reaction:removed";
+  | "issue_reaction:removed"
+  | "project:created"
+  | "project:updated"
+  | "project:deleted"
+  | "project:files_changed";
 
 export interface WSMessage<T = unknown> {
   type: WSEventType;
@@ -215,3 +220,8 @@ export interface IssueReactionRemovedPayload {
   actor_type: string;
   actor_id: string;
 }
+
+export interface ProjectCreatedPayload { project: Project; }
+export interface ProjectUpdatedPayload { project: Project; }
+export interface ProjectDeletedPayload { project_id: string; }
+export interface ProjectFilesChangedPayload { project_id: string; path: string; }

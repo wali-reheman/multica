@@ -203,6 +203,20 @@ type IssueToLabel struct {
 	LabelID string `json:"label_id"`
 }
 
+type LocalProject struct {
+	ID            string         `json:"id"`
+	WorkspaceID   string         `json:"workspace_id"`
+	Name          string         `json:"name"`
+	LocalPath     string         `json:"local_path"`
+	DefaultBranch string         `json:"default_branch"`
+	Language      sql.NullString `json:"language"`
+	FileCount     int64          `json:"file_count"`
+	SizeBytes     int64          `json:"size_bytes"`
+	LastOpenedAt  sql.NullString `json:"last_opened_at"`
+	CreatedAt     string         `json:"created_at"`
+	UpdatedAt     string         `json:"updated_at"`
+}
+
 type Member struct {
 	ID          string `json:"id"`
 	WorkspaceID string `json:"workspace_id"`
