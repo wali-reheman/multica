@@ -15,6 +15,9 @@ import type {
   ChannelMessageCreatedPayload,
   ChannelMessageUpdatedPayload,
   ChannelMessageDeletedPayload,
+  SuggestionCreatedPayload,
+  SuggestionApprovedPayload,
+  SuggestionDismissedPayload,
 } from "@/shared/types";
 import { ChannelList } from "./channel-list";
 import { ChatView } from "./chat-view";
@@ -64,6 +67,22 @@ export function ChatPage() {
 
   useWSEvent("channel:member_removed", () => {
     useChannelStore.getState().fetch();
+  });
+
+  // Task suggestion events
+  useWSEvent("suggestion:created", (payload) => {
+    const { suggestion, channel_id } = payload as SuggestionCreatedPayload;
+    useChannelStore.getState().addSuggestion(channel_id, suggestion);
+  });
+
+  useWSEvent("suggestion:approved", (payload) => {
+    const { suggestion, channel_id } = payload as SuggestionApprovedPayload;
+    useChannelStore.getState().updateSuggestion(channel_id, suggestion.id, suggestion);
+  });
+
+  useWSEvent("suggestion:dismissed", (payload) => {
+    const { suggestion, channel_id } = payload as SuggestionDismissedPayload;
+    useChannelStore.getState().updateSuggestion(channel_id, suggestion.id, suggestion);
   });
 
   return (

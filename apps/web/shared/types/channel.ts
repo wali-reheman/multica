@@ -54,3 +54,33 @@ export interface CreateIssueFromChannelRequest {
   priority?: string;
   assignee_id?: string;
 }
+
+export type SuggestionStatus = "pending" | "approved" | "dismissed";
+
+export interface TaskSuggestion {
+  id: string;
+  channel_id: string;
+  workspace_id: string;
+  message_id: string | null;
+  suggested_by_type: "member" | "agent";
+  suggested_by_id: string;
+  title: string;
+  description: string;
+  priority: string;
+  assignee_type: "member" | "agent" | null;
+  assignee_id: string | null;
+  status: SuggestionStatus;
+  resolved_by_type: string | null;
+  resolved_by_id: string | null;
+  issue_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateSuggestionRequest {
+  title: string;
+  description?: string;
+  priority?: string;
+  assignee_type?: string;
+  assignee_id?: string;
+}

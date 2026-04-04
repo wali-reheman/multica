@@ -47,4 +47,5 @@ export type { IssueDependency, DependencyType } from "./dependency";
 export type {
   Channel, ChannelMember, ChannelMessage, ChannelMessageType,
   CreateChannelRequest, CreateChannelMessageRequest, CreateIssueFromChannelRequest,
+  TaskSuggestion, SuggestionStatus, CreateSuggestionRequest,
 } from "./channel";

@@ -51,6 +51,8 @@ import type {
   CreateChannelRequest,
   CreateChannelMessageRequest,
   CreateIssueFromChannelRequest,
+  TaskSuggestion,
+  CreateSuggestionRequest,
 } from "@/shared/types";
 import { type Logger, noopLogger } from "@/shared/logger";
 
@@ -865,6 +867,32 @@ export class ApiClient {
     return this.fetch(`/api/channels/${channelId}/create-issue`, {
       method: "POST",
       body: JSON.stringify(data),
+    });
+  }
+
+  // Task suggestions
+  async listSuggestions(channelId: string, status?: string): Promise<TaskSuggestion[]> {
+    const search = new URLSearchParams();
+    if (status) search.set("status", status);
+    return this.fetch(`/api/channels/${channelId}/suggestions?${search}`);
+  }
+
+  async createSuggestion(channelId: string, data: CreateSuggestionRequest): Promise<TaskSuggestion> {
+    return this.fetch(`/api/channels/${channelId}/suggestions`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async approveSuggestion(channelId: string, suggestionId: string): Promise<{ suggestion: TaskSuggestion; issue: Issue }> {
+    return this.fetch(`/api/channels/${channelId}/suggestions/${suggestionId}/approve`, {
+      method: "POST",
+    });
+  }
+
+  async dismissSuggestion(channelId: string, suggestionId: string): Promise<TaskSuggestion> {
+    return this.fetch(`/api/channels/${channelId}/suggestions/${suggestionId}/dismiss`, {
+      method: "POST",
     });
   }
 }

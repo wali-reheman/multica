@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { toast } from "sonner";
 import { api } from "@/shared/api";
-import type { Channel, ChannelMessage } from "@/shared/types";
+import type { Channel, ChannelMessage, TaskSuggestion } from "@/shared/types";
 
 interface ChannelState {
   channels: Channel[];
@@ -9,6 +9,7 @@ interface ChannelState {
   activeChannelId: string | null;
   messages: Record<string, ChannelMessage[]>;
   messagesLoading: Record<string, boolean>;
+  suggestions: Record<string, TaskSuggestion[]>;
 
   fetch: () => Promise<void>;
   setChannels: (channels: Channel[]) => void;
@@ -21,6 +22,10 @@ interface ChannelState {
   addMessage: (channelId: string, message: ChannelMessage) => void;
   updateMessage: (channelId: string, messageId: string, updates: Partial<ChannelMessage>) => void;
   removeMessage: (channelId: string, messageId: string) => void;
+
+  fetchSuggestions: (channelId: string) => Promise<void>;
+  addSuggestion: (channelId: string, suggestion: TaskSuggestion) => void;
+  updateSuggestion: (channelId: string, suggestionId: string, updates: Partial<TaskSuggestion>) => void;
 }
 
 export const useChannelStore = create<ChannelState>((set, get) => ({
@@ -29,6 +34,7 @@ export const useChannelStore = create<ChannelState>((set, get) => ({
   activeChannelId: null,
   messages: {},
   messagesLoading: {},
+  suggestions: {},
 
   fetch: async () => {
     const isInitialLoad = get().channels.length === 0;
@@ -107,6 +113,39 @@ export const useChannelStore = create<ChannelState>((set, get) => ({
         messages: {
           ...s.messages,
           [channelId]: existing.filter((m) => m.id !== messageId),
+        },
+      };
+    }),
+
+  fetchSuggestions: async (channelId: string) => {
+    try {
+      const suggestions = await api.listSuggestions(channelId, "pending");
+      set((s) => ({
+        suggestions: { ...s.suggestions, [channelId]: suggestions },
+      }));
+    } catch {
+      // Silent fail — suggestions are secondary
+    }
+  },
+
+  addSuggestion: (channelId, suggestion) =>
+    set((s) => {
+      const existing = s.suggestions[channelId] ?? [];
+      if (existing.some((sg) => sg.id === suggestion.id)) return s;
+      return {
+        suggestions: { ...s.suggestions, [channelId]: [suggestion, ...existing] },
+      };
+    }),
+
+  updateSuggestion: (channelId, suggestionId, updates) =>
+    set((s) => {
+      const existing = s.suggestions[channelId] ?? [];
+      return {
+        suggestions: {
+          ...s.suggestions,
+          [channelId]: existing.map((sg) =>
+            sg.id === suggestionId ? { ...sg, ...updates } : sg,
+          ),
         },
       };
     }),

@@ -15,6 +15,7 @@ import { api } from "@/shared/api";
 import { useChannelStore } from "../store";
 import { useIssueStore } from "@/features/issues";
 import { CreateIssueFromChatDialog } from "./create-issue-dialog";
+import { SuggestTaskDialog } from "./suggest-task-dialog";
 
 interface MessageComposerProps {
   channelId: string;
@@ -25,6 +26,7 @@ export function MessageComposer({ channelId, channelName }: MessageComposerProps
   const [content, setContent] = useState("");
   const [sending, setSending] = useState(false);
   const [showCreateIssue, setShowCreateIssue] = useState(false);
+  const [showSuggestTask, setShowSuggestTask] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const addMessage = useChannelStore((s) => s.addMessage);
 
@@ -65,8 +67,11 @@ export function MessageComposer({ channelId, channelName }: MessageComposerProps
               }
             />
             <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => setShowSuggestTask(true)}>
+                Suggest a task
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setShowCreateIssue(true)}>
-                Create issue from chat
+                Create issue directly
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -96,6 +101,11 @@ export function MessageComposer({ channelId, channelName }: MessageComposerProps
         channelId={channelId}
         open={showCreateIssue}
         onOpenChange={setShowCreateIssue}
+      />
+      <SuggestTaskDialog
+        channelId={channelId}
+        open={showSuggestTask}
+        onOpenChange={setShowSuggestTask}
       />
     </>
   );

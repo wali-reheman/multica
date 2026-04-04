@@ -295,6 +295,10 @@ func NewRouter(sqlDB *sql.DB, hub *realtime.Hub, bus *events.Bus) chi.Router {
 					r.Get("/messages", h.ListChannelMessages)
 					r.Post("/messages", h.CreateChannelMessage)
 					r.Post("/create-issue", h.CreateIssueFromChannelMessage)
+					r.Get("/suggestions", h.ListSuggestions)
+					r.Post("/suggestions", h.CreateSuggestion)
+					r.Post("/suggestions/{suggestionId}/approve", h.ApproveSuggestion)
+					r.Post("/suggestions/{suggestionId}/dismiss", h.DismissSuggestion)
 				})
 			})
 

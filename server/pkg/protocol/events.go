@@ -82,4 +82,9 @@ const (
 	EventChannelMessageCreated = "channel:message_created"
 	EventChannelMessageUpdated = "channel:message_updated"
 	EventChannelMessageDeleted = "channel:message_deleted"
+
+	// Task suggestion events (Slock Phase 2)
+	EventSuggestionCreated  = "suggestion:created"
+	EventSuggestionApproved = "suggestion:approved"
+	EventSuggestionDismissed = "suggestion:dismissed"
 )

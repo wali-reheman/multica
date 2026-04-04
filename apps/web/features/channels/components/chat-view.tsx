@@ -8,6 +8,7 @@ import { useChannelStore } from "../store";
 import { MessageItem } from "./message-item";
 import { MessageComposer } from "./message-composer";
 import { ChannelMembersPopover } from "./channel-members-popover";
+import { SuggestionCard } from "./suggestion-card";
 
 export function ChatView() {
   const activeChannelId = useChannelStore((s) => s.activeChannelId);
@@ -15,18 +16,24 @@ export function ChatView() {
   const messages = useChannelStore((s) => s.messages);
   const messagesLoading = useChannelStore((s) => s.messagesLoading);
   const fetchMessages = useChannelStore((s) => s.fetchMessages);
+  const suggestions = useChannelStore((s) => s.suggestions);
+  const fetchSuggestions = useChannelStore((s) => s.fetchSuggestions);
 
   const channel = channels.find((c) => c.id === activeChannelId);
   const channelMessages = activeChannelId ? (messages[activeChannelId] ?? []) : [];
   const isLoading = activeChannelId ? (messagesLoading[activeChannelId] ?? false) : false;
+  const pendingSuggestions = activeChannelId
+    ? (suggestions[activeChannelId] ?? []).filter((s) => s.status === "pending")
+    : [];
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (activeChannelId) {
       fetchMessages(activeChannelId);
+      fetchSuggestions(activeChannelId);
     }
-  }, [activeChannelId, fetchMessages]);
+  }, [activeChannelId, fetchMessages, fetchSuggestions]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -65,6 +72,15 @@ export function ChatView() {
           <ChannelMembersPopover channelId={channel.id} members={channel.members ?? []} />
         </div>
       </div>
+
+      {/* Pending suggestions */}
+      {pendingSuggestions.length > 0 && (
+        <div className="border-b px-2 py-2 space-y-1">
+          {pendingSuggestions.map((s) => (
+            <SuggestionCard key={s.id} suggestion={s} />
+          ))}
+        </div>
+      )}
 
       {/* Messages */}
       <ScrollArea className="flex-1 px-4">

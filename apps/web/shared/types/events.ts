@@ -58,7 +58,10 @@ export type WSEventType =
   | "channel:member_removed"
   | "channel:message_created"
   | "channel:message_updated"
-  | "channel:message_deleted";
+  | "channel:message_deleted"
+  | "suggestion:created"
+  | "suggestion:approved"
+  | "suggestion:dismissed";
 
 export interface WSMessage<T = unknown> {
   type: WSEventType;
@@ -244,3 +247,8 @@ export interface ChannelMemberRemovedPayload { channel_id: string; member_type: 
 export interface ChannelMessageCreatedPayload { message: ChannelMessage; channel_name: string; }
 export interface ChannelMessageUpdatedPayload { message: ChannelMessage; }
 export interface ChannelMessageDeletedPayload { message_id: string; channel_id: string; }
+
+// Task suggestion events
+export interface SuggestionCreatedPayload { suggestion: import("./channel").TaskSuggestion; channel_id: string; }
+export interface SuggestionApprovedPayload { suggestion: import("./channel").TaskSuggestion; channel_id: string; issue: Issue; }
+export interface SuggestionDismissedPayload { suggestion: import("./channel").TaskSuggestion; channel_id: string; }

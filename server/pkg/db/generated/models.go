@@ -324,6 +324,26 @@ type TaskMessage struct {
 	CreatedAt string         `json:"created_at"`
 }
 
+type TaskSuggestion struct {
+	ID              string         `json:"id"`
+	ChannelID       string         `json:"channel_id"`
+	WorkspaceID     string         `json:"workspace_id"`
+	MessageID       sql.NullString `json:"message_id"`
+	SuggestedByType string         `json:"suggested_by_type"`
+	SuggestedByID   string         `json:"suggested_by_id"`
+	Title           string         `json:"title"`
+	Description     string         `json:"description"`
+	Priority        string         `json:"priority"`
+	AssigneeType    sql.NullString `json:"assignee_type"`
+	AssigneeID      sql.NullString `json:"assignee_id"`
+	Status          string         `json:"status"`
+	ResolvedByType  sql.NullString `json:"resolved_by_type"`
+	ResolvedByID    sql.NullString `json:"resolved_by_id"`
+	IssueID         sql.NullString `json:"issue_id"`
+	CreatedAt       string         `json:"created_at"`
+	UpdatedAt       string         `json:"updated_at"`
+}
+
 type User struct {
 	ID        string         `json:"id"`
 	Name      string         `json:"name"`
