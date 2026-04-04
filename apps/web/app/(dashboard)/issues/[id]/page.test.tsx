@@ -185,6 +185,9 @@ vi.mock("@/shared/api", () => ({
     getActiveTaskForIssue: vi.fn().mockResolvedValue({ task: null }),
     listTasksByIssue: vi.fn().mockResolvedValue([]),
     listTaskMessages: vi.fn().mockResolvedValue([]),
+    listIssueLabels: vi.fn().mockResolvedValue([]),
+    listIssueDependencies: vi.fn().mockResolvedValue([]),
+    cancelTask: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
