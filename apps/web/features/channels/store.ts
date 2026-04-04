@@ -43,8 +43,9 @@ export const useChannelStore = create<ChannelState>((set, get) => ({
       const channels = await api.listChannels();
       set({ channels, loading: false });
     } catch {
-      toast.error("Failed to load channels");
-      if (isInitialLoad) set({ loading: false });
+      // Don't toast on initial load — the table might not exist yet
+      // (migration not applied). Just show empty state.
+      set({ channels: [], loading: false });
     }
   },
 

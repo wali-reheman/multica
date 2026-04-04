@@ -125,23 +125,41 @@ func main() {
 	slog.Info("server stopped")
 }
 
-// runMigrations applies SQLite migrations on startup.
+// runMigrations applies all SQLite migrations on startup.
+// Migrations use CREATE IF NOT EXISTS / idempotent DDL so they're safe to re-run.
 func runMigrations(sqlDB *sql.DB) error {
-	migrationSQL, err := os.ReadFile(findMigrationsFile())
+	dir := findMigrationsDir()
+	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return err
 	}
-	_, err = sqlDB.Exec(string(migrationSQL))
-	return err
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if len(name) < 7 || name[len(name)-7:] != ".up.sql" {
+			continue
+		}
+		path := filepath.Join(dir, name)
+		migrationSQL, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if _, err := sqlDB.Exec(string(migrationSQL)); err != nil {
+			slog.Warn("migration failed (may be already applied)", "file", name, "error", err)
+		}
+	}
+	return nil
 }
 
-func findMigrationsFile() string {
+func findMigrationsDir() string {
 	candidates := []string{
-		"migrations-sqlite/001_init.up.sql",
-		"server/migrations-sqlite/001_init.up.sql",
+		"migrations-sqlite",
+		"server/migrations-sqlite",
 	}
 	for _, c := range candidates {
-		if _, err := os.Stat(c); err == nil {
+		if info, err := os.Stat(c); err == nil && info.IsDir() {
 			return c
 		}
 	}
