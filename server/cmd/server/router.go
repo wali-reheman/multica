@@ -103,6 +103,11 @@ func NewRouter(sqlDB *sql.DB, hub *realtime.Hub, bus *events.Bus) chi.Router {
 		r.Post("/tasks/{taskId}/fail", h.FailTask)
 		r.Post("/tasks/{taskId}/messages", h.ReportTaskMessages)
 		r.Get("/tasks/{taskId}/messages", h.ListTaskMessages)
+
+		// Channel endpoints for agent execution context
+		r.Get("/channels/{channelId}/messages", h.ListChannelMessages)
+		r.Post("/channels/{channelId}/messages", h.CreateChannelMessage)
+		r.Post("/channels/{channelId}/suggestions", h.CreateSuggestion)
 	})
 
 	// Protected API routes

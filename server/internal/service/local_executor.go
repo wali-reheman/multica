@@ -86,10 +86,13 @@ func (e *LocalExecutor) ExecuteTask(ctx context.Context, taskID string) error {
 		return fmt.Errorf("load agent: %w", err)
 	}
 
-	issue, err := e.queries.GetIssue(ctx, task.IssueID)
-	if err != nil {
-		<-e.sem
-		return fmt.Errorf("load issue: %w", err)
+	var issue db.Issue
+	if task.IssueID.Valid {
+		issue, err = e.queries.GetIssue(ctx, task.IssueID.String)
+		if err != nil {
+			<-e.sem
+			return fmt.Errorf("load issue: %w", err)
+		}
 	}
 
 	// Determine provider from runtime.
@@ -166,9 +169,19 @@ func (e *LocalExecutor) runTask(ctx context.Context, task db.AgentTaskQueue, age
 
 	skills := e.taskService.LoadAgentSkills(ctx, task.AgentID)
 
-	prompt := buildLocalPrompt(task.IssueID)
+	var prompt string
+	var wsID string
+	if task.IssueID.Valid {
+		prompt = buildLocalPrompt(task.IssueID.String)
+		wsID = issue.WorkspaceID
+	} else if task.ChannelID.Valid {
+		prompt = buildLocalChannelPrompt(task.ChannelID.String, task.ChannelMessageID)
+		if ch, err := e.queries.GetChannel(ctx, task.ChannelID.String); err == nil {
+			wsID = ch.WorkspaceID
+		}
+	}
 
-	workDir := filepath.Join(e.cfg.WorkspacesRoot, issue.WorkspaceID, task.ID[:8], "workdir")
+	workDir := filepath.Join(e.cfg.WorkspacesRoot, wsID, task.ID[:8], "workdir")
 	if err := os.MkdirAll(workDir, 0o755); err != nil {
 		taskLog.Error("failed to create workdir", "error", err)
 		e.taskService.FailTask(ctx, task.ID, fmt.Sprintf("create workdir: %v", err))
@@ -329,6 +342,22 @@ func buildLocalPrompt(issueID string) string {
 	b.WriteString("You are running as a local coding agent for a Multica workspace.\n\n")
 	fmt.Fprintf(&b, "Your assigned issue ID is: %s\n\n", issueID)
 	fmt.Fprintf(&b, "Start by running `multica issue get %s --output json` to understand your task, then complete it.\n", issueID)
+	return b.String()
+}
+
+func buildLocalChannelPrompt(channelID string, messageID sql.NullString) string {
+	var b strings.Builder
+	b.WriteString("You are running as a local coding agent for a Multica workspace.\n\n")
+	fmt.Fprintf(&b, "You have been mentioned in a channel chat. Your channel ID is: %s\n\n", channelID)
+	if messageID.Valid {
+		fmt.Fprintf(&b, "The triggering message ID is: %s\n\n", messageID.String)
+	}
+	b.WriteString("Start by reading the recent channel messages to understand the conversation context:\n")
+	fmt.Fprintf(&b, "1. Run `multica channel messages %s --output json` to read recent messages\n", channelID)
+	b.WriteString("2. Understand what is being discussed and what is being asked of you\n")
+	fmt.Fprintf(&b, "3. Reply: `multica channel reply %s --content \"your response\"`\n\n", channelID)
+	b.WriteString("If the conversation suggests work that should be tracked:\n")
+	fmt.Fprintf(&b, "- Suggest a task: `multica channel suggest %s --title \"...\" --description \"...\" [--assignee <agent-id>]`\n", channelID)
 	return b.String()
 }
 

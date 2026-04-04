@@ -416,7 +416,7 @@ func (h *Handler) enqueueMentionedAgentTasks(ctx context.Context, issue db.Issue
 		}
 		// Dedup: skip if this agent already has a pending task for this issue.
 		hasPending, err := h.Queries.HasPendingTaskForIssueAndAgent(ctx, db.HasPendingTaskForIssueAndAgentParams{
-			IssueID: issue.ID,
+			IssueID: sql.NullString{String: issue.ID, Valid: true},
 			AgentID: agentUUID,
 		})
 		if err != nil || hasPending {

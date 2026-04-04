@@ -171,7 +171,11 @@ func (d *EmbeddedDaemon) executeTask(ctx context.Context, task *db.AgentTaskQueu
 	d.taskService.StartTask(ctx, task.ID)
 
 	// Build prompt from issue
-	issue, err := d.queries.GetIssue(ctx, task.IssueID)
+	if !task.IssueID.Valid {
+		d.taskService.FailTask(ctx, task.ID, "task has no issue")
+		return
+	}
+	issue, err := d.queries.GetIssue(ctx, task.IssueID.String)
 	if err != nil {
 		d.taskService.FailTask(ctx, task.ID, "issue not found")
 		return

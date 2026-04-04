@@ -94,24 +94,26 @@ type RepoData struct {
 }
 
 type AgentTaskResponse struct {
-	ID             string         `json:"id"`
-	AgentID        string         `json:"agent_id"`
-	RuntimeID      string         `json:"runtime_id"`
-	IssueID        string         `json:"issue_id"`
-	WorkspaceID    string         `json:"workspace_id"`
-	Status         string         `json:"status"`
-	Priority       int32          `json:"priority"`
-	DispatchedAt   *string        `json:"dispatched_at"`
-	StartedAt      *string        `json:"started_at"`
-	CompletedAt    *string        `json:"completed_at"`
-	Result         any            `json:"result"`
-	Error          *string        `json:"error"`
-	Agent          *TaskAgentData `json:"agent,omitempty"`
-	Repos          []RepoData     `json:"repos,omitempty"`
-	CreatedAt      string         `json:"created_at"`
-	PriorSessionID   string         `json:"prior_session_id,omitempty"`    // session ID from a previous task on same issue
-	PriorWorkDir     string         `json:"prior_work_dir,omitempty"`     // work_dir from a previous task on same issue
-	TriggerCommentID *string        `json:"trigger_comment_id,omitempty"` // comment that triggered this task
+	ID               string         `json:"id"`
+	AgentID          string         `json:"agent_id"`
+	RuntimeID        string         `json:"runtime_id"`
+	IssueID          string         `json:"issue_id,omitempty"`
+	ChannelID        string         `json:"channel_id,omitempty"`
+	ChannelMessageID string         `json:"channel_message_id,omitempty"`
+	WorkspaceID      string         `json:"workspace_id"`
+	Status           string         `json:"status"`
+	Priority         int32          `json:"priority"`
+	DispatchedAt     *string        `json:"dispatched_at"`
+	StartedAt        *string        `json:"started_at"`
+	CompletedAt      *string        `json:"completed_at"`
+	Result           any            `json:"result"`
+	Error            *string        `json:"error"`
+	Agent            *TaskAgentData `json:"agent,omitempty"`
+	Repos            []RepoData     `json:"repos,omitempty"`
+	CreatedAt        string         `json:"created_at"`
+	PriorSessionID   string         `json:"prior_session_id,omitempty"`
+	PriorWorkDir     string         `json:"prior_work_dir,omitempty"`
+	TriggerCommentID *string        `json:"trigger_comment_id,omitempty"`
 }
 
 // TaskAgentData holds agent info included in claim responses so the daemon
@@ -129,16 +131,18 @@ func taskToResponse(t db.AgentTaskQueue) AgentTaskResponse {
 		json.Unmarshal([]byte(t.Result.String), &result)
 	}
 	return AgentTaskResponse{
-		ID:           t.ID,
-		AgentID:      t.AgentID,
-		RuntimeID:    t.RuntimeID,
-		IssueID:      t.IssueID,
-		Status:       t.Status,
-		Priority:     int32(t.Priority),
-		DispatchedAt: nullStringToPtr(t.DispatchedAt),
-		StartedAt:    nullStringToPtr(t.StartedAt),
-		CompletedAt:  nullStringToPtr(t.CompletedAt),
-		Result:       result,
+		ID:               t.ID,
+		AgentID:          t.AgentID,
+		RuntimeID:        t.RuntimeID,
+		IssueID:          t.IssueID.String,
+		ChannelID:        t.ChannelID.String,
+		ChannelMessageID: t.ChannelMessageID.String,
+		Status:           t.Status,
+		Priority:         int32(t.Priority),
+		DispatchedAt:     nullStringToPtr(t.DispatchedAt),
+		StartedAt:        nullStringToPtr(t.StartedAt),
+		CompletedAt:      nullStringToPtr(t.CompletedAt),
+		Result:           result,
 		Error:            nullStringToPtr(t.Error),
 		CreatedAt:        t.CreatedAt,
 		TriggerCommentID: nullStringToPtr(t.TriggerCommentID),

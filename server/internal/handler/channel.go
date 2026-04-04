@@ -759,11 +759,19 @@ func (h *Handler) enqueueChannelMentionedAgentTasks(r *http.Request, channel db.
 			continue
 		}
 
-		// Create or find an issue to run the agent task against.
-		// For now, we skip issue-less agent execution since the task system
-		// requires an issue_id. Users can create issues from chat to trigger agents.
-		slog.Debug("channel mention detected but skipping task enqueue (no issue context)",
-			"agent_id", agentID, "channel_id", channel.ID, "message_id", msg.ID)
+		// Dedup: skip if agent already has a pending channel task.
+		hasPending, err := h.Queries.HasPendingChannelTask(r.Context(), db.HasPendingChannelTaskParams{
+			ChannelID: sql.NullString{String: channel.ID, Valid: true},
+			AgentID:   agentID,
+		})
+		if err != nil || hasPending {
+			continue
+		}
+
+		// Enqueue channel-scoped task — agent will respond to the channel message.
+		if _, err := h.TaskService.EnqueueChannelTask(r.Context(), channel.ID, agentID, sql.NullString{String: msg.ID, Valid: true}); err != nil {
+			slog.Warn("enqueue channel agent task failed", "channel_id", channel.ID, "agent_id", agentID, "error", err)
+		}
 	}
 }
 

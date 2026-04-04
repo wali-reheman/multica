@@ -175,7 +175,7 @@ func (h *Handler) RunAgentOnIssue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hasActive, _ := h.Queries.HasActiveTaskForIssue(r.Context(), issue.ID)
+	hasActive, _ := h.Queries.HasActiveTaskForIssue(r.Context(), sql.NullString{String: issue.ID, Valid: true})
 	if hasActive {
 		writeError(w, http.StatusConflict, "a task is already active for this issue")
 		return
@@ -220,7 +220,7 @@ func (h *Handler) GetIssueDiff(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tasks, err := h.Queries.ListTasksByIssue(r.Context(), issue.ID)
+	tasks, err := h.Queries.ListTasksByIssue(r.Context(), sql.NullString{String: issue.ID, Valid: true})
 	if err != nil || len(tasks) == 0 {
 		writeJSON(w, http.StatusOK, map[string]any{"diff": "", "has_changes": false})
 		return
@@ -279,7 +279,7 @@ func (h *Handler) CommitAgentChanges(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.WorkDir == "" {
-		tasks, err := h.Queries.ListTasksByIssue(r.Context(), issue.ID)
+		tasks, err := h.Queries.ListTasksByIssue(r.Context(), sql.NullString{String: issue.ID, Valid: true})
 		if err != nil || len(tasks) == 0 {
 			writeError(w, http.StatusBadRequest, "no completed tasks found")
 			return

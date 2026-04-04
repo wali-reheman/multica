@@ -123,11 +123,11 @@ func broadcastFailedTasks(ctx context.Context, queries *db.Queries, bus *events.
 	switch ts := tasks.(type) {
 	case []db.FailStaleTasksRow:
 		for _, t := range ts {
-			items = append(items, failedTask{ID: t.ID, AgentID: t.AgentID, IssueID: t.IssueID})
+			items = append(items, failedTask{ID: t.ID, AgentID: t.AgentID, IssueID: t.IssueID.String})
 		}
 	case []db.FailTasksForOfflineRuntimesRow:
 		for _, t := range ts {
-			items = append(items, failedTask{ID: t.ID, AgentID: t.AgentID, IssueID: t.IssueID})
+			items = append(items, failedTask{ID: t.ID, AgentID: t.AgentID, IssueID: t.IssueID.String})
 		}
 	}
 

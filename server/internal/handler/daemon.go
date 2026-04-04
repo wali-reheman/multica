@@ -248,12 +248,27 @@ func (h *Handler) ClaimTaskByRuntime(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Include workspace ID and repos so the daemon can set up worktrees.
-	if issue, err := h.Queries.GetIssue(r.Context(), task.IssueID); err == nil {
-		resp.WorkspaceID = issue.WorkspaceID
-		if ws, err := h.Queries.GetWorkspace(r.Context(), issue.WorkspaceID); err == nil && ws.Repos != "" {
-			var repos []RepoData
-			if json.Unmarshal([]byte(ws.Repos), &repos) == nil && len(repos) > 0 {
-				resp.Repos = repos
+	if task.IssueID.Valid {
+		if issue, err := h.Queries.GetIssue(r.Context(), task.IssueID.String); err == nil {
+			resp.WorkspaceID = issue.WorkspaceID
+			if ws, err := h.Queries.GetWorkspace(r.Context(), issue.WorkspaceID); err == nil && ws.Repos != "" {
+				var repos []RepoData
+				if json.Unmarshal([]byte(ws.Repos), &repos) == nil && len(repos) > 0 {
+					resp.Repos = repos
+				}
+			}
+		}
+	}
+
+	// For channel tasks, resolve workspace from channel.
+	if task.ChannelID.Valid && resp.WorkspaceID == "" {
+		if ch, err := h.Queries.GetChannel(r.Context(), task.ChannelID.String); err == nil {
+			resp.WorkspaceID = ch.WorkspaceID
+			if ws, err := h.Queries.GetWorkspace(r.Context(), ch.WorkspaceID); err == nil && ws.Repos != "" {
+				var repos []RepoData
+				if json.Unmarshal([]byte(ws.Repos), &repos) == nil && len(repos) > 0 {
+					resp.Repos = repos
+				}
 			}
 		}
 	}
@@ -330,8 +345,8 @@ func (h *Handler) ReportTaskProgress(w http.ResponseWriter, r *http.Request) {
 	// Look up task to get workspace ID via the associated issue.
 	workspaceID := ""
 	task, err := h.Queries.GetAgentTask(r.Context(), taskID)
-	if err == nil {
-		if issue, err := h.Queries.GetIssue(r.Context(), task.IssueID); err == nil {
+	if err == nil && task.IssueID.Valid {
+		if issue, err := h.Queries.GetIssue(r.Context(), task.IssueID.String); err == nil {
 			workspaceID = issue.WorkspaceID
 		}
 	}
@@ -444,8 +459,10 @@ func (h *Handler) ReportTaskMessages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	workspaceID := ""
-	if issue, err := h.Queries.GetIssue(r.Context(), task.IssueID); err == nil {
-		workspaceID = issue.WorkspaceID
+	if task.IssueID.Valid {
+		if issue, err := h.Queries.GetIssue(r.Context(), task.IssueID.String); err == nil {
+			workspaceID = issue.WorkspaceID
+		}
 	}
 
 	for _, msg := range req.Messages {
@@ -473,7 +490,7 @@ func (h *Handler) ReportTaskMessages(w http.ResponseWriter, r *http.Request) {
 		if workspaceID != "" {
 			h.publish(protocol.EventTaskMessage, workspaceID, "system", "", protocol.TaskMessagePayload{
 				TaskID:  taskID,
-				IssueID: task.IssueID,
+				IssueID: task.IssueID.String,
 				Seq:     msg.Seq,
 				Type:    msg.Type,
 				Tool:    msg.Tool,
@@ -516,7 +533,7 @@ func (h *Handler) ListTaskMessages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	issueID := task.IssueID
+	issueID := task.IssueID.String
 
 	resp := make([]protocol.TaskMessagePayload, len(messages))
 	for i, m := range messages {
@@ -543,7 +560,7 @@ func (h *Handler) ListTaskMessages(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetActiveTaskForIssue(w http.ResponseWriter, r *http.Request) {
 	issueID := chi.URLParam(r, "id")
 
-	tasks, err := h.Queries.ListActiveTasksByIssue(r.Context(), issueID)
+	tasks, err := h.Queries.ListActiveTasksByIssue(r.Context(), sql.NullString{String: issueID, Valid: true})
 	if err != nil || len(tasks) == 0 {
 		writeJSON(w, http.StatusOK, map[string]any{"task": nil})
 		return
@@ -571,7 +588,7 @@ func (h *Handler) CancelTask(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ListTasksByIssue(w http.ResponseWriter, r *http.Request) {
 	issueID := chi.URLParam(r, "id")
 
-	tasks, err := h.Queries.ListTasksByIssue(r.Context(), issueID)
+	tasks, err := h.Queries.ListTasksByIssue(r.Context(), sql.NullString{String: issueID, Valid: true})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to list tasks")
 		return

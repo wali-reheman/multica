@@ -38,6 +38,7 @@ func init() {
 	rootCmd.AddCommand(updateCmd)
 	rootCmd.AddCommand(skillCmd)
 	rootCmd.AddCommand(runtimeCmd)
+	rootCmd.AddCommand(channelCmd)
 }
 
 func main() {

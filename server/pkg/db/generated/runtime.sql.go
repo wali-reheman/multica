@@ -21,9 +21,9 @@ RETURNING id, agent_id, issue_id
 `
 
 type FailTasksForOfflineRuntimesRow struct {
-	ID      string `json:"id"`
-	AgentID string `json:"agent_id"`
-	IssueID string `json:"issue_id"`
+	ID      string         `json:"id"`
+	AgentID string         `json:"agent_id"`
+	IssueID sql.NullString `json:"issue_id"`
 }
 
 func (q *Queries) FailTasksForOfflineRuntimes(ctx context.Context) ([]FailTasksForOfflineRuntimesRow, error) {

@@ -66,7 +66,9 @@ type AgentTaskQueue struct {
 	ID               string         `json:"id"`
 	AgentID          string         `json:"agent_id"`
 	RuntimeID        string         `json:"runtime_id"`
-	IssueID          string         `json:"issue_id"`
+	IssueID          sql.NullString `json:"issue_id"`
+	ChannelID        sql.NullString `json:"channel_id"`
+	ChannelMessageID sql.NullString `json:"channel_message_id"`
 	Status           string         `json:"status"`
 	Priority         int64          `json:"priority"`
 	Context          sql.NullString `json:"context"`

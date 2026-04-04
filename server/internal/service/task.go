@@ -57,7 +57,7 @@ func (s *TaskService) EnqueueTaskForIssue(ctx context.Context, issue db.Issue, t
 		ID:               uuid.New().String(),
 		AgentID:          agent.ID,
 		RuntimeID:        agent.RuntimeID,
-		IssueID:          issue.ID,
+		IssueID:          sql.NullString{String: issue.ID, Valid: true},
 		Priority:         priorityToInt(issue.Priority),
 		TriggerCommentID: commentID,
 	})
@@ -86,7 +86,7 @@ func (s *TaskService) EnqueueTaskForMention(ctx context.Context, issue db.Issue,
 		ID:               uuid.New().String(),
 		AgentID:          agentID,
 		RuntimeID:        agent.RuntimeID,
-		IssueID:          issue.ID,
+		IssueID:          sql.NullString{String: issue.ID, Valid: true},
 		Priority:         priorityToInt(issue.Priority),
 		TriggerCommentID: triggerCommentID,
 	})
@@ -101,7 +101,7 @@ func (s *TaskService) EnqueueTaskForMention(ctx context.Context, issue db.Issue,
 
 // CancelTasksForIssue cancels all active tasks for an issue.
 func (s *TaskService) CancelTasksForIssue(ctx context.Context, issueID string) error {
-	return s.Queries.CancelAgentTasksByIssue(ctx, issueID)
+	return s.Queries.CancelAgentTasksByIssue(ctx, sql.NullString{String: issueID, Valid: true})
 }
 
 // CancelTask cancels a single task by ID.
@@ -204,11 +204,11 @@ func (s *TaskService) CompleteTask(ctx context.Context, taskID string, result []
 
 	slog.Info("task completed", "task_id", task.ID, "issue_id", task.IssueID)
 
-	if !task.TriggerCommentID.Valid {
+	if task.IssueID.Valid && !task.TriggerCommentID.Valid {
 		var payload protocol.TaskCompletedPayload
 		if err := json.Unmarshal(result, &payload); err == nil {
 			if payload.Output != "" {
-				s.createAgentComment(ctx, task.IssueID, task.AgentID, redact.Text(payload.Output), "comment", task.TriggerCommentID)
+				s.createAgentComment(ctx, task.IssueID.String, task.AgentID, redact.Text(payload.Output), "comment", task.TriggerCommentID)
 			}
 		}
 	}
@@ -235,8 +235,8 @@ func (s *TaskService) FailTask(ctx context.Context, taskID string, errMsg string
 
 	slog.Warn("task failed", "task_id", task.ID, "issue_id", task.IssueID, "error", errMsg)
 
-	if errMsg != "" {
-		s.createAgentComment(ctx, task.IssueID, task.AgentID, redact.Text(errMsg), "system", task.TriggerCommentID)
+	if errMsg != "" && task.IssueID.Valid {
+		s.createAgentComment(ctx, task.IssueID.String, task.AgentID, redact.Text(errMsg), "system", task.TriggerCommentID)
 	}
 	s.ReconcileAgentStatus(ctx, task.AgentID)
 	s.broadcastTaskEvent(ctx, protocol.EventTaskFailed, task)
@@ -320,6 +320,47 @@ type AgentSkillFileData struct {
 	Content string `json:"content"`
 }
 
+// resolveTaskWorkspace finds the workspace for a task (from issue or channel).
+func (s *TaskService) resolveTaskWorkspace(ctx context.Context, task db.AgentTaskQueue) string {
+	if task.IssueID.Valid {
+		if issue, err := s.Queries.GetIssue(ctx, task.IssueID.String); err == nil {
+			return issue.WorkspaceID
+		}
+	}
+	if task.ChannelID.Valid {
+		if channel, err := s.Queries.GetChannel(ctx, task.ChannelID.String); err == nil {
+			return channel.WorkspaceID
+		}
+	}
+	return ""
+}
+
+// EnqueueChannelTask creates a queued task for an agent responding to a channel message.
+func (s *TaskService) EnqueueChannelTask(ctx context.Context, channelID string, agentID string, messageID sql.NullString) (db.AgentTaskQueue, error) {
+	agent, err := s.Queries.GetAgent(ctx, agentID)
+	if err != nil {
+		return db.AgentTaskQueue{}, fmt.Errorf("load agent: %w", err)
+	}
+	if agent.ArchivedAt.Valid {
+		return db.AgentTaskQueue{}, fmt.Errorf("agent is archived")
+	}
+
+	task, err := s.Queries.CreateChannelAgentTask(ctx, db.CreateChannelAgentTaskParams{
+		ID:               uuid.New().String(),
+		AgentID:          agentID,
+		RuntimeID:        agent.RuntimeID,
+		ChannelID:        sql.NullString{String: channelID, Valid: true},
+		ChannelMessageID: messageID,
+		Priority:         0,
+	})
+	if err != nil {
+		return db.AgentTaskQueue{}, fmt.Errorf("create channel task: %w", err)
+	}
+
+	slog.Info("channel task enqueued", "task_id", task.ID, "channel_id", channelID, "agent_id", agentID)
+	return task, nil
+}
+
 func priorityToInt(p string) int64 {
 	switch p {
 	case "urgent":
@@ -346,10 +387,7 @@ func (s *TaskService) broadcastTaskDispatch(ctx context.Context, task db.AgentTa
 	payload["task_id"] = task.ID
 	payload["runtime_id"] = task.RuntimeID
 
-	workspaceID := ""
-	if issue, err := s.Queries.GetIssue(ctx, task.IssueID); err == nil {
-		workspaceID = issue.WorkspaceID
-	}
+	workspaceID := s.resolveTaskWorkspace(ctx, task)
 	if workspaceID == "" {
 		return
 	}
@@ -363,10 +401,7 @@ func (s *TaskService) broadcastTaskDispatch(ctx context.Context, task db.AgentTa
 }
 
 func (s *TaskService) broadcastTaskEvent(ctx context.Context, eventType string, task db.AgentTaskQueue) {
-	workspaceID := ""
-	if issue, err := s.Queries.GetIssue(ctx, task.IssueID); err == nil {
-		workspaceID = issue.WorkspaceID
-	}
+	workspaceID := s.resolveTaskWorkspace(ctx, task)
 	if workspaceID == "" {
 		return
 	}
@@ -376,10 +411,11 @@ func (s *TaskService) broadcastTaskEvent(ctx context.Context, eventType string, 
 		ActorType:   "system",
 		ActorID:     "",
 		Payload: map[string]any{
-			"task_id":  task.ID,
-			"agent_id": task.AgentID,
-			"issue_id": task.IssueID,
-			"status":   task.Status,
+			"task_id":    task.ID,
+			"agent_id":   task.AgentID,
+			"issue_id":   util.NullStringToPtr(task.IssueID),
+			"channel_id": util.NullStringToPtr(task.ChannelID),
+			"status":     task.Status,
 		},
 	})
 }

@@ -78,7 +78,20 @@ func buildMetaSkillContent(provider string, ctx TaskContextForEnv) string {
 
 	b.WriteString("### Workflow\n\n")
 
-	if ctx.TriggerCommentID != "" {
+	if ctx.ChannelID != "" {
+		// Channel-triggered: respond to a channel conversation
+		b.WriteString("**This task was triggered by an @mention in a channel.** Your primary job is to read the conversation and reply.\n\n")
+		fmt.Fprintf(&b, "1. Run `multica channel messages %s --output json` to read recent messages\n", ctx.ChannelID)
+		if ctx.ChannelMessageID != "" {
+			fmt.Fprintf(&b, "2. Find the triggering message (ID: `%s`) and understand what is being asked\n", ctx.ChannelMessageID)
+		} else {
+			b.WriteString("2. Understand what is being discussed and what is being asked of you\n")
+		}
+		fmt.Fprintf(&b, "3. Reply: `multica channel reply %s --content \"your response\"`\n", ctx.ChannelID)
+		b.WriteString("4. If the conversation suggests work that should be tracked:\n")
+		fmt.Fprintf(&b, "   - Suggest a task: `multica channel suggest %s --title \"...\" --description \"...\" [--assignee <agent-id>]`\n", ctx.ChannelID)
+		b.WriteString("5. Do NOT create issues directly — use the suggest command so the team can approve\n\n")
+	} else if ctx.TriggerCommentID != "" {
 		// Comment-triggered: focus on reading and replying
 		b.WriteString("**This task was triggered by a comment.** Your primary job is to respond.\n\n")
 		fmt.Fprintf(&b, "1. Run `multica issue get %s --output json` to understand the issue context\n", ctx.IssueID)

@@ -62,6 +62,11 @@ INSERT INTO agent_task_queue (id, agent_id, runtime_id, issue_id, status, priori
 VALUES (?, ?, ?, ?, 'queued', ?, sqlc.narg(trigger_comment_id))
 RETURNING *;
 
+-- name: CreateChannelAgentTask :one
+INSERT INTO agent_task_queue (id, agent_id, runtime_id, channel_id, channel_message_id, status, priority)
+VALUES (?, ?, ?, ?, sqlc.narg(channel_message_id), 'queued', ?)
+RETURNING *;
+
 -- name: CancelAgentTasksByIssue :exec
 UPDATE agent_task_queue
 SET status = 'cancelled'
@@ -78,17 +83,18 @@ WHERE id = ?;
 
 -- name: ClaimAgentTask :one
 -- Claims the next queued task for an agent, enforcing per-issue serialization.
+-- Channel tasks (issue_id IS NULL) skip the per-issue serialization check.
 -- SQLite single-writer model provides implicit serialization (no FOR UPDATE needed).
 UPDATE agent_task_queue
 SET status = 'dispatched', dispatched_at = datetime('now')
 WHERE id = (
     SELECT atq.id FROM agent_task_queue atq
     WHERE atq.agent_id = ? AND atq.status = 'queued'
-      AND NOT EXISTS (
+      AND (atq.issue_id IS NULL OR NOT EXISTS (
           SELECT 1 FROM agent_task_queue active
           WHERE active.issue_id = atq.issue_id
             AND active.status IN ('dispatched', 'running')
-      )
+      ))
     ORDER BY atq.priority DESC, atq.created_at ASC
     LIMIT 1
 )
@@ -162,6 +168,10 @@ ORDER BY created_at DESC;
 SELECT * FROM agent_task_queue
 WHERE issue_id = ?
 ORDER BY created_at DESC;
+
+-- name: HasPendingChannelTask :one
+SELECT count(*) > 0 AS has_pending FROM agent_task_queue
+WHERE channel_id = ? AND agent_id = ? AND status IN ('queued', 'dispatched');
 
 -- name: UpdateAgentStatus :one
 UPDATE agent SET status = ?, updated_at = datetime('now')
