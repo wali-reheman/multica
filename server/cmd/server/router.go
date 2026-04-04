@@ -281,6 +281,28 @@ func NewRouter(sqlDB *sql.DB, hub *realtime.Hub, bus *events.Bus) chi.Router {
 				})
 			})
 
+			// Channels (Slock)
+			r.Route("/api/channels", func(r chi.Router) {
+				r.Get("/", h.ListChannels)
+				r.Post("/", h.CreateChannel)
+				r.Route("/{channelId}", func(r chi.Router) {
+					r.Get("/", h.GetChannel)
+					r.Put("/", h.UpdateChannel)
+					r.Delete("/", h.DeleteChannel)
+					r.Get("/members", h.ListChannelMembers)
+					r.Post("/members", h.AddChannelMember)
+					r.Delete("/members", h.RemoveChannelMember)
+					r.Get("/messages", h.ListChannelMessages)
+					r.Post("/messages", h.CreateChannelMessage)
+					r.Post("/create-issue", h.CreateIssueFromChannelMessage)
+				})
+			})
+
+			r.Route("/api/channel-messages/{messageId}", func(r chi.Router) {
+				r.Put("/", h.UpdateChannelMessage)
+				r.Delete("/", h.DeleteChannelMessage)
+			})
+
 			r.Route("/api/inbox", func(r chi.Router) {
 				r.Get("/", h.ListInbox)
 				r.Get("/unread-count", h.CountUnreadInbox)

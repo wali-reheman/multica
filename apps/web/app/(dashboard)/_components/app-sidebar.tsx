@@ -16,6 +16,7 @@ import {
   SquarePen,
   CircleUser,
   FolderGit2,
+  MessageSquare,
 } from "lucide-react";
 import { WorkspaceAvatar } from "@/features/workspace";
 import { useIssueDraftStore } from "@/features/issues/stores/draft-store";
@@ -48,6 +49,7 @@ import { useModalStore } from "@/features/modals";
 
 const primaryNav = [
   { href: "/inbox", label: "Inbox", icon: Inbox },
+  { href: "/chat", label: "Chat", icon: MessageSquare },
   { href: "/my-issues", label: "My Issues", icon: CircleUser },
   { href: "/issues", label: "Issues", icon: ListTodo },
 ];

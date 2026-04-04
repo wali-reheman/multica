@@ -5,6 +5,7 @@ import type { Comment, Reaction } from "./comment";
 import type { TimelineEntry } from "./activity";
 import type { Workspace, MemberWithUser } from "./workspace";
 import type { Project } from "./project";
+import type { Channel, ChannelMessage } from "./channel";
 
 // WebSocket event types (matching Go server protocol/events.go)
 export type WSEventType =
@@ -49,7 +50,15 @@ export type WSEventType =
   | "project:created"
   | "project:updated"
   | "project:deleted"
-  | "project:files_changed";
+  | "project:files_changed"
+  | "channel:created"
+  | "channel:updated"
+  | "channel:deleted"
+  | "channel:member_added"
+  | "channel:member_removed"
+  | "channel:message_created"
+  | "channel:message_updated"
+  | "channel:message_deleted";
 
 export interface WSMessage<T = unknown> {
   type: WSEventType;
@@ -225,3 +234,13 @@ export interface ProjectCreatedPayload { project: Project; }
 export interface ProjectUpdatedPayload { project: Project; }
 export interface ProjectDeletedPayload { project_id: string; }
 export interface ProjectFilesChangedPayload { project_id: string; path: string; }
+
+// Channel (Slock) events
+export interface ChannelCreatedPayload { channel: Channel; }
+export interface ChannelUpdatedPayload { channel: Channel; }
+export interface ChannelDeletedPayload { channel_id: string; }
+export interface ChannelMemberAddedPayload { channel_id: string; member_type: string; member_id: string; }
+export interface ChannelMemberRemovedPayload { channel_id: string; member_type: string; member_id: string; }
+export interface ChannelMessageCreatedPayload { message: ChannelMessage; channel_name: string; }
+export interface ChannelMessageUpdatedPayload { message: ChannelMessage; }
+export interface ChannelMessageDeletedPayload { message_id: string; channel_id: string; }

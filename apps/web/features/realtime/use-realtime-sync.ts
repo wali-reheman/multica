@@ -8,6 +8,7 @@ import { useInboxStore } from "@/features/inbox";
 import { useWorkspaceStore } from "@/features/workspace";
 import { useAuthStore } from "@/features/auth";
 import { useProjectStore } from "@/features/projects";
+import { useChannelStore } from "@/features/channels";
 import { createLogger } from "@/shared/logger";
 import { api } from "@/shared/api";
 import type {
@@ -65,6 +66,7 @@ export function useRealtimeSync(ws: WSClient | null) {
         });
       },
       skill: () => void useWorkspaceStore.getState().refreshSkills(),
+      channel: () => void useChannelStore.getState().fetch(),
     };
 
     const timers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -195,6 +197,7 @@ export function useRealtimeSync(ws: WSClient | null) {
           useWorkspaceStore.getState().refreshMembers(),
           useWorkspaceStore.getState().refreshSkills(),
           useProjectStore.getState().fetch(),
+          useChannelStore.getState().fetch(),
         ]);
       } catch (e) {
         logger.error("reconnect refetch failed", e);

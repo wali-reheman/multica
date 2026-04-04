@@ -46,6 +46,11 @@ import type {
   Label,
   IssueDependency,
   DependencyType,
+  Channel,
+  ChannelMessage,
+  CreateChannelRequest,
+  CreateChannelMessageRequest,
+  CreateIssueFromChannelRequest,
 } from "@/shared/types";
 import { type Logger, noopLogger } from "@/shared/logger";
 
@@ -786,6 +791,80 @@ export class ApiClient {
   async deleteIssueDependency(issueId: string, depId: string): Promise<void> {
     await this.fetch(`/api/issues/${issueId}/dependencies/${depId}`, {
       method: "DELETE",
+    });
+  }
+
+  // Channels (Slock)
+  async listChannels(): Promise<Channel[]> {
+    return this.fetch("/api/channels");
+  }
+
+  async createChannel(data: CreateChannelRequest): Promise<Channel> {
+    return this.fetch("/api/channels", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getChannel(channelId: string): Promise<Channel> {
+    return this.fetch(`/api/channels/${channelId}`);
+  }
+
+  async updateChannel(channelId: string, data: { name?: string; description?: string }): Promise<Channel> {
+    return this.fetch(`/api/channels/${channelId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteChannel(channelId: string): Promise<void> {
+    await this.fetch(`/api/channels/${channelId}`, { method: "DELETE" });
+  }
+
+  async addChannelMember(channelId: string, memberType: string, memberId: string): Promise<void> {
+    await this.fetch(`/api/channels/${channelId}/members`, {
+      method: "POST",
+      body: JSON.stringify({ member_type: memberType, member_id: memberId }),
+    });
+  }
+
+  async removeChannelMember(channelId: string, memberType: string, memberId: string): Promise<void> {
+    await this.fetch(`/api/channels/${channelId}/members`, {
+      method: "DELETE",
+      body: JSON.stringify({ member_type: memberType, member_id: memberId }),
+    });
+  }
+
+  async listChannelMessages(channelId: string, params?: { limit?: number; offset?: number; since?: string }): Promise<ChannelMessage[]> {
+    const search = new URLSearchParams();
+    if (params?.limit) search.set("limit", String(params.limit));
+    if (params?.offset) search.set("offset", String(params.offset));
+    if (params?.since) search.set("since", params.since);
+    return this.fetch(`/api/channels/${channelId}/messages?${search}`);
+  }
+
+  async sendChannelMessage(channelId: string, data: CreateChannelMessageRequest): Promise<ChannelMessage> {
+    return this.fetch(`/api/channels/${channelId}/messages`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateChannelMessage(messageId: string, content: string): Promise<ChannelMessage> {
+    return this.fetch(`/api/channel-messages/${messageId}`, {
+      method: "PUT",
+      body: JSON.stringify({ content }),
+    });
+  }
+
+  async deleteChannelMessage(messageId: string): Promise<void> {
+    await this.fetch(`/api/channel-messages/${messageId}`, { method: "DELETE" });
+  }
+
+  async createIssueFromChannel(channelId: string, data: CreateIssueFromChannelRequest): Promise<{ issue: Issue; message: ChannelMessage }> {
+    return this.fetch(`/api/channels/${channelId}/create-issue`, {
+      method: "POST",
+      body: JSON.stringify(data),
     });
   }
 }

@@ -1,4 +1,4 @@
--- MULTICA-LOCAL: Stage 4 — Local Agent Config & Skills queries (SQLite dialect)
+-- MULTICA-LOCAL: Stage 4 - Local Agent Config & Skills queries (SQLite dialect)
 
 -- name: ListLocalAgentConfigs :many
 SELECT * FROM local_agent_config

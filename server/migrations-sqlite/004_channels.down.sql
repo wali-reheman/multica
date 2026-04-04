@@ -1,0 +1,9 @@
+DROP INDEX IF EXISTS idx_channel_message_parent;
+DROP INDEX IF EXISTS idx_channel_message_workspace;
+DROP INDEX IF EXISTS idx_channel_message_channel;
+DROP INDEX IF EXISTS idx_channel_member_member;
+DROP INDEX IF EXISTS idx_channel_member_channel;
+DROP INDEX IF EXISTS idx_channel_workspace;
+DROP TABLE IF EXISTS channel_message;
+DROP TABLE IF EXISTS channel_member;
+DROP TABLE IF EXISTS channel;

@@ -95,6 +95,41 @@ type Attachment struct {
 	CreatedAt    string         `json:"created_at"`
 }
 
+type Channel struct {
+	ID            string         `json:"id"`
+	WorkspaceID   string         `json:"workspace_id"`
+	Name          string         `json:"name"`
+	Description   string         `json:"description"`
+	Type          string         `json:"type"`
+	CreatedByType string         `json:"created_by_type"`
+	CreatedByID   string         `json:"created_by_id"`
+	ArchivedAt    sql.NullString `json:"archived_at"`
+	CreatedAt     string         `json:"created_at"`
+	UpdatedAt     string         `json:"updated_at"`
+}
+
+type ChannelMember struct {
+	ChannelID  string `json:"channel_id"`
+	MemberType string `json:"member_type"`
+	MemberID   string `json:"member_id"`
+	Role       string `json:"role"`
+	JoinedAt   string `json:"joined_at"`
+}
+
+type ChannelMessage struct {
+	ID          string         `json:"id"`
+	ChannelID   string         `json:"channel_id"`
+	WorkspaceID string         `json:"workspace_id"`
+	AuthorType  string         `json:"author_type"`
+	AuthorID    string         `json:"author_id"`
+	Content     string         `json:"content"`
+	Type        string         `json:"type"`
+	ParentID    sql.NullString `json:"parent_id"`
+	IssueID     sql.NullString `json:"issue_id"`
+	CreatedAt   string         `json:"created_at"`
+	UpdatedAt   string         `json:"updated_at"`
+}
+
 type Comment struct {
 	ID          string         `json:"id"`
 	IssueID     string         `json:"issue_id"`

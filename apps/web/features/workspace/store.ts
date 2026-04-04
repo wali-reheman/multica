@@ -5,6 +5,7 @@ import type { Workspace, MemberWithUser, Agent, Skill } from "@/shared/types";
 import { useIssueStore } from "@/features/issues";
 import { useInboxStore } from "@/features/inbox";
 import { useRuntimeStore } from "@/features/runtimes";
+import { useChannelStore } from "@/features/channels";
 import { useLabelStore } from "@/features/labels";
 import { toast } from "sonner";
 import { api } from "@/shared/api";
@@ -116,6 +117,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     useIssueStore.getState().setIssues([]);
     useInboxStore.getState().setItems([]);
     useRuntimeStore.getState().setRuntimes([]);
+    useChannelStore.getState().setChannels([]);
     set({ workspace: ws, members: [], agents: [], skills: [] });
 
     await hydrateWorkspace(workspaces, ws.id);

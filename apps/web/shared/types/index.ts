@@ -44,3 +44,7 @@ export type {
 } from "./project";
 export type { Label } from "./label";
 export type { IssueDependency, DependencyType } from "./dependency";
+export type {
+  Channel, ChannelMember, ChannelMessage, ChannelMessageType,
+  CreateChannelRequest, CreateChannelMessageRequest, CreateIssueFromChannelRequest,
+} from "./channel";

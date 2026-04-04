@@ -72,4 +72,14 @@ const (
 	EventProjectUpdated      = "project:updated"
 	EventProjectDeleted      = "project:deleted"
 	EventProjectFilesChanged = "project:files_changed"
+
+	// Channel events (Slock)
+	EventChannelCreated        = "channel:created"
+	EventChannelUpdated        = "channel:updated"
+	EventChannelDeleted        = "channel:deleted"
+	EventChannelMemberAdded    = "channel:member_added"
+	EventChannelMemberRemoved  = "channel:member_removed"
+	EventChannelMessageCreated = "channel:message_created"
+	EventChannelMessageUpdated = "channel:message_updated"
+	EventChannelMessageDeleted = "channel:message_deleted"
 )
