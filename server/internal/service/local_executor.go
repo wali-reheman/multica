@@ -145,7 +145,9 @@ func (e *LocalExecutor) ExecuteTask(ctx context.Context, taskID pgtype.UUID) err
 	}
 
 	// Register cancel function.
-	runCtx, runCancel := context.WithCancel(ctx)
+	// Use context.Background() as parent so the goroutine isn't killed when the
+	// HTTP handler returns. The task continues until completion or explicit cancel.
+	runCtx, runCancel := context.WithCancel(context.Background())
 	e.mu.Lock()
 	e.running[taskIDStr] = runCancel
 	e.mu.Unlock()

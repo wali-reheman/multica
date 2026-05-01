@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -197,12 +199,8 @@ func (h *Handler) RunAgentOnIssue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Execute locally in-process.
-	executor := service.NewLocalExecutor(
-		service.LocalExecutorConfig{MaxConcurrentTasks: 3},
-		h.Queries, h.Hub, h.Bus, h.TaskService,
-	)
-	if err := executor.ExecuteTask(r.Context(), task.ID); err != nil {
+	// Execute locally in-process using the singleton executor.
+	if err := h.LocalExecutor.ExecuteTask(r.Context(), task.ID); err != nil {
 		slog.Error("run agent: execute failed", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to execute task: "+err.Error())
 		return
@@ -301,8 +299,10 @@ func (h *Handler) CommitAgentChanges(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if req.WorkDir == "" {
-		writeError(w, http.StatusBadRequest, "work_dir not found")
+	// Validate work_dir is within the expected workspaces root to prevent path traversal.
+	workDir := req.WorkDir
+	if !isWithinWorkspacesRoot(workDir) {
+		writeError(w, http.StatusBadRequest, "work_dir is not in a valid workspace directory")
 		return
 	}
 
@@ -313,14 +313,14 @@ func (h *Handler) CommitAgentChanges(w http.ResponseWriter, r *http.Request) {
 
 	// Stage all and commit.
 	addCmd := exec.Command("git", "add", "-A")
-	addCmd.Dir = req.WorkDir
+	addCmd.Dir = workDir
 	if out, err := addCmd.CombinedOutput(); err != nil {
 		writeError(w, http.StatusInternalServerError, "git add failed: "+string(out))
 		return
 	}
 
 	commitCmd := exec.Command("git", "commit", "-m", message)
-	commitCmd.Dir = req.WorkDir
+	commitCmd.Dir = workDir
 	commitOut, err := commitCmd.CombinedOutput()
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "git commit failed: "+string(commitOut))
@@ -461,4 +461,42 @@ func pgToNullString(s string) pgtype.Text {
 		return pgtype.Text{}
 	}
 	return pgtype.Text{String: s, Valid: true}
+}
+
+// isWithinWorkspacesRoot validates that the given workDir is within the expected
+// workspace directory structure: {home}/multica_workspaces/{workspaceID}/{taskID}/workdir.
+func isWithinWorkspacesRoot(workDir string) bool {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return false
+	}
+	workspacesRoot := filepath.Join(home, "multica_workspaces")
+
+	absRoot, err := filepath.Abs(workspacesRoot)
+	if err != nil {
+		return false
+	}
+	absWorkDir, err := filepath.Abs(workDir)
+	if err != nil {
+		return false
+	}
+
+	rel, err := filepath.Rel(absRoot, absWorkDir)
+	if err != nil {
+		return false
+	}
+
+	if strings.HasPrefix(rel, "..") {
+		return false
+	}
+
+	parts := strings.Split(filepath.ToSlash(rel), "/")
+	if len(parts) < 3 {
+		return false
+	}
+	if parts[len(parts)-1] != "workdir" {
+		return false
+	}
+
+	return true
 }
